@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+
+{% block title %}الشراكات - Street Games V2{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-people text-primary"></i>
+                    إدارة الشراكات
+                </h1>
+                <p class="text-muted">إدارة شركاء مناطق الألعاب</p>
+            </div>
+            <div>
+                {% if is_manager %}
+                    <a href="{% url 'partnerships:partnership_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> إضافة شراكة جديدة
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_partnerships|num:0 }}</h4>
+                        <p class="card-text">إجمالي الشراكات</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-people fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ active_partnerships|num:0 }}</h4>
+                        <p class="card-text">الشراكات النشطة</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-check-circle fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_investment|money:0 }}</h4>
+                        <p class="card-text">إجمالي الاستثمارات</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-cash-stack fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-funnel"></i> تصفية النتائج
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                {{ filter_form.zone.label_tag }}
+                {{ filter_form.zone }}
+            </div>
+            <div class="col-md-3">
+                {{ filter_form.partner_type.label_tag }}
+                {{ filter_form.partner_type }}
+            </div>
+            <div class="col-md-3">
+                {{ filter_form.active.label_tag }}
+                {{ filter_form.active }}
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-search"></i> بحث
+                </button>
+                <a href="{% url 'partnerships:partnerships_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-clockwise"></i> إعادة تعيين
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Partnerships Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-table"></i> قائمة الشراكات
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>اسم الشريك</th>
+                            <th>المنطقة</th>
+                            <th>النوع</th>
+                            <th>النسبة</th>
+                            <th>الاستثمار</th>
+                            <th>تاريخ البداية</th>
+                            <th>يتحمل المصروفات</th>
+                            <th>الأرصدة الحالية</th>
+                            <th>الحالة</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for partnership in page_obj %}
+                            <tr>
+                                <td>
+                                    <strong>{{ partnership.partner_name }}</strong>
+                                    {% if partnership.national_id %}
+                                        <br><small class="text-muted">ر.ق: {{ partnership.national_id }}</small>
+                                    {% endif %}
+                                    {% if partnership.commercial_register %}
+                                        <br><small class="text-muted">س.ت: {{ partnership.commercial_register }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ partnership.zone.code }}</span>
+                                    {{ partnership.zone.name }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        {{ partnership.get_partner_type_display }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-info fs-6">{{ partnership.percentage }}%</span>
+                                </td>
+                                <td class="text-end">
+                                    {{ partnership.investment_amount|money }} {{ partnership.currency }}
+                                </td>
+                                <td>{{ partnership.start_date }}</td>
+                                <td class="text-center">
+                                    {% if partnership.share_expenses %}
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-check"></i> 
+                                            {% if partnership.expense_percentage %}
+                                                {{ partnership.expense_percentage }}%
+                                            {% else %}
+                                                {{ partnership.percentage }}%
+                                            {% endif %}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-x"></i> لا
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if partnership.balances %}
+                                        {% for currency, balance in partnership.balances.items %}
+                                            <div class="mb-1">
+                                                <span class="badge bg-secondary me-1">{{ currency }}</span>
+                                                <span class="{% if balance > 0 %}text-success{% elif balance < 0 %}text-danger{% else %}text-muted{% endif %}">
+                                                    {{ balance|money }}
+                                                </span>
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">لا توجد حركات</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if partnership.active %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> نشط
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-x-circle"></i> غير نشط
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if is_manager %}
+                                        <a href="{% url 'partnerships:partnership_edit' partnership.pk %}" 
+                                           class="btn btn-sm btn-outline-primary" title="تعديل">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    {% endif %}
+                                    <a href="{% url 'partnerships:partner_accounts_list' %}?partnership={{ partnership.pk }}" 
+                                       class="btn btn-sm btn-outline-info" title="كشف الحساب">
+                                        <i class="bi bi-file-text"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="تصفح الصفحات">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">الأولى</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">السابقة</a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">التالية</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">الأخيرة</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-people display-1 text-muted"></i>
+                <h4 class="text-muted mt-3">لا توجد شراكات</h4>
+                <p class="text-muted">لم يتم العثور على أي شراكات تطابق معايير البحث</p>
+                {% if is_manager %}
+                    <a href="{% url 'partnerships:partnership_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> إضافة أول شراكة
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning"></i> إجراءات سريعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <a href="{% url 'partnerships:partner_accounts_list' %}" class="btn btn-outline-info w-100">
+                            <i class="bi bi-file-text"></i> كشوف حسابات الشركاء
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <a href="{% url 'partnerships:payments_list' %}" class="btn btn-outline-success w-100">
+                            <i class="bi bi-cash"></i> دفعات الشركاء
+                        </a>
+                    </div>
+                    {% if can_access_treasury %}
+                        <div class="col-md-4 mb-2">
+                            <a href="{% url 'partnerships:payment_create' %}" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-plus-circle"></i> إضافة دفعة جديدة
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block content %}
+<div class="container mt-4">
+  <h3 class="mb-3">مرتجع مشتريات</h3>
+  <form method="post">{% csrf_token %}
+    <div class="row g-3">
+      <div class="col-12 col-lg-6">{{ form|crispy }}</div>
+      <div class="col-12 col-lg-6">
+        <h5 class="mb-2">بنود المرتجع</h5>
+        {% include 'purchases/_return_lines_formset.html' with formset=formset %}
+      </div>
+    </div>
+    <div class="d-grid d-sm-flex gap-2 mt-3">
+      <button class="btn btn-success">حفظ وترحيل</button>
+      <a href="{% url 'purchases:returns_list' %}" class="btn btn-secondary">رجوع</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+

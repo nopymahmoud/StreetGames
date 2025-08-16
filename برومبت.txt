@@ -1,0 +1,1113 @@
+from __future__ import annotations
+from decimal import Decimal
+from django.contrib.auth import get_user_model
+from django.db import models
+
+User = get_user_model()
+
+# ==============================
+# 1) الهيكل التنظيمي الأساسي
+# ==============================
+
+class Hotel(models.Model):
+    name = models.CharField(max_length=200)
+    location = models.CharField(max_length=200)
+    manager = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self) -> str:
+        return self.name
+
+class GameZone(models.Model):
+    hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE)
+    name = models.CharField(max_length=200)
+    code = models.CharField(max_length=20, unique=True)
+    area = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    monthly_rent = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='EGP')
+    manager = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    active = models.BooleanField(default=True)
+    opening_date = models.DateField()
+    # accounts
+    revenue_account = models.CharField(max_length=20, blank=True)
+    expense_account = models.CharField(max_length=20, blank=True)
+    class Meta:
+        verbose_name = "منطقة ألعاب"
+        verbose_name_plural = "مناطق الألعاب"
+    def __str__(self) -> str:
+        return f"{self.hotel.name} - {self.name} ({self.code})"
+
+class GameType(models.Model):
+    CATEGORY_CHOICES = [('electronic','ألعاب إلكترونية'),('mechanical','ألعاب ميكانيكية'),
+                        ('inflatable','ألعاب هوائية'),('vehicles','مركبات'),
+                        ('arcade','ألعاب أركيد'),('vr','واقع افتراضي')]
+    name = models.CharField(max_length=100, unique=True)
+    code = models.CharField(max_length=20, unique=True)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self) -> str:
+        return self.name
+
+class Warehouse(models.Model):
+    TYPE_CHOICES = [('main','مخزن رئيسي'),('branch','مخزن فرعي'),
+                    ('maintenance','مخزن صيانة'),('spare_parts','مخزن قطع غيار')]
+    name = models.CharField(max_length=200)
+    code = models.CharField(max_length=20, unique=True)
+    location = models.CharField(max_length=300)
+    warehouse_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    manager = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self) -> str:
+        return f"{self.name} ({self.code})"
+
+
+# ==============================
+# 2) الموردون والعملاء والأصول (الألعاب)
+# ==============================
+
+class Supplier(models.Model):
+    TYPE_CHOICES = [('manufacturer','مصنع'),('distributor','موزع'),('importer','مستورد'),('local','محلي')]
+    name = models.CharField(max_length=200)
+    code = models.CharField(max_length=20, unique=True)
+    supplier_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    country = models.CharField(max_length=100, default='الصين')
+    contact_person = models.CharField(max_length=200, blank=True)
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=50, blank=True)
+    address = models.TextField(blank=True)
+    credit_limit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    current_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    payment_terms = models.CharField(max_length=100, blank=True)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self) -> str:
+        return f"{self.name} ({self.code})"
+
+class Customer(models.Model):
+    TYPE_CHOICES = [('individual','فرد'),('company','شركة'),('hotel','فندق'),('retailer','تاجر تجزئة')]
+    name = models.CharField(max_length=200)
+    code = models.CharField(max_length=20, unique=True)
+    customer_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    phone = models.CharField(max_length=50)
+    email = models.EmailField(blank=True)
+    address = models.TextField(blank=True)
+    credit_limit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    current_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self) -> str:
+        return f"{self.name} ({self.code})"
+
+class Game(models.Model):
+    LOCATION_CHOICES = [('warehouse','مخزن'),('zone','منطقة ألعاب'),('maintenance','صيانة'),('sold','مباع'),('damaged','تالف')]
+    name = models.CharField(max_length=200)
+    code = models.CharField(max_length=20, unique=True)
+    game_type = models.ForeignKey(GameType, on_delete=models.PROTECT)
+    location_type = models.CharField(max_length=20, choices=LOCATION_CHOICES, default='warehouse')
+    current_warehouse = models.ForeignKey(Warehouse, on_delete=models.SET_NULL, null=True, blank=True)
+    current_zone = models.ForeignKey(GameZone, on_delete=models.SET_NULL, null=True, blank=True)
+    purchase_price = models.DecimalField(max_digits=10, decimal_places=2)
+    purchase_currency = models.CharField(max_length=3, default='EGP')
+    current_value = models.DecimalField(max_digits=10, decimal_places=2)
+    depreciation_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    serial_number = models.CharField(max_length=100, blank=True)
+    manufacturer = models.CharField(max_length=200, blank=True)
+    model = models.CharField(max_length=100, blank=True)
+    year_of_manufacture = models.IntegerField(null=True, blank=True)
+    working = models.BooleanField(default=True)
+    maintenance_required = models.BooleanField(default=False)
+    warranty_expiry = models.DateField(null=True, blank=True)
+    supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True, blank=True)
+    purchase_invoice = models.CharField(max_length=100, blank=True)
+    purchase_date = models.DateField()
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self) -> str:
+        return f"{self.name} ({self.code})"
+
+
+# ==============================
+# 3) Inventory & HR & Manufacturing
+# ==============================
+
+class Item(models.Model):
+    TYPE_CHOICES = [('consumable','استهلاكي'), ('storable','مخزني'), ('service','خدمة')]
+    name = models.CharField(max_length=200)
+    sku = models.CharField(max_length=50, unique=True)
+    item_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='storable')
+    uom = models.CharField(max_length=20, default='unit')
+    purchase_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    sales_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    currency = models.CharField(max_length=3, default='EGP')
+    is_active = models.BooleanField(default=True)
+    def __str__(self):
+        return f"{self.name} ({self.sku})"
+
+class StockMove(models.Model):
+    MOVE_TYPES = [('in','وارد'), ('out','صادر'), ('transfer','تحويل'), ('adjust','تسوية')]
+    item = models.ForeignKey('Item', on_delete=models.CASCADE, null=True, blank=True)
+    game = models.ForeignKey('Game', on_delete=models.CASCADE, null=True, blank=True)
+    from_warehouse = models.ForeignKey(Warehouse, on_delete=models.SET_NULL, null=True, blank=True, related_name='moves_from')
+    to_warehouse = models.ForeignKey(Warehouse, on_delete=models.SET_NULL, null=True, blank=True, related_name='moves_to')
+    move_type = models.CharField(max_length=20, choices=MOVE_TYPES)
+    qty = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+    uom = models.CharField(max_length=20, default='unit')
+    unit_cost = models.DecimalField(max_digits=12, decimal_places=4, default=0)
+    currency = models.CharField(max_length=3, default='EGP')
+    ref = models.CharField(max_length=100, blank=True)
+    note = models.CharField(max_length=300, blank=True)
+    date = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    class Meta:
+        ordering = ['-date']
+
+class StockBalance(models.Model):
+    warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
+    item = models.ForeignKey('Item', on_delete=models.CASCADE)
+    qty_on_hand = models.DecimalField(max_digits=14, decimal_places=3, default=0)
+    avg_cost = models.DecimalField(max_digits=12, decimal_places=4, default=0)
+    currency = models.CharField(max_length=3, default='EGP')
+    class Meta:
+        unique_together = [('warehouse','item')]
+
+class Department(models.Model):
+    name = models.CharField(max_length=100)
+    def __str__(self):
+        return self.name
+
+class Employee(models.Model):
+    name = models.CharField(max_length=150)
+    code = models.CharField(max_length=30, unique=True)
+    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True)
+    zone = models.ForeignKey(GameZone, on_delete=models.SET_NULL, null=True, blank=True)
+    salary_currency = models.CharField(max_length=3, default='EGP')
+    salary_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    active = models.BooleanField(default=True)
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+class AttendanceLog(models.Model):
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    check_in = models.DateTimeField()
+    check_out = models.DateTimeField(null=True, blank=True)
+    note = models.CharField(max_length=200, blank=True)
+
+class PayrollEntry(models.Model):
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    period_start = models.DateField()
+    period_end = models.DateField()
+    gross = models.DecimalField(max_digits=12, decimal_places=2)
+    deductions = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    net = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default='EGP')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class BillOfMaterials(models.Model):
+    product = models.ForeignKey('Item', on_delete=models.CASCADE, related_name='boms')
+    quantity = models.DecimalField(max_digits=12, decimal_places=3, default=1)
+    uom = models.CharField(max_length=20, default='unit')
+
+class BOMLine(models.Model):
+    bom = models.ForeignKey(BillOfMaterials, on_delete=models.CASCADE, related_name='lines')
+    component = models.ForeignKey('Item', on_delete=models.CASCADE)
+    qty = models.DecimalField(max_digits=12, decimal_places=3)
+    uom = models.CharField(max_length=20, default='unit')
+
+class WorkOrder(models.Model):
+    bom = models.ForeignKey(BillOfMaterials, on_delete=models.CASCADE)
+    target_qty = models.DecimalField(max_digits=12, decimal_places=3)
+    warehouse = models.ForeignKey(Warehouse, on_delete=models.SET_NULL, null=True)
+    status = models.CharField(max_length=20, default='draft')  # draft/in_progress/done/cancelled
+    currency = models.CharField(max_length=3, default='EGP')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class ProductionConsumption(models.Model):
+    work_order = models.ForeignKey(WorkOrder, on_delete=models.CASCADE, related_name='consumptions')
+    component = models.ForeignKey('Item', on_delete=models.CASCADE)
+    qty = models.DecimalField(max_digits=12, decimal_places=3)
+    unit_cost = models.DecimalField(max_digits=12, decimal_places=4, default=0)
+    currency = models.CharField(max_length=3, default='EGP')
+
+class ProductionReceipt(models.Model):
+    work_order = models.ForeignKey(WorkOrder, on_delete=models.CASCADE, related_name='receipts')
+    product = models.ForeignKey('Item', on_delete=models.CASCADE)
+    qty = models.DecimalField(max_digits=12, decimal_places=3)
+    unit_cost = models.DecimalField(max_digits=12, decimal_places=4, default=0)
+    currency = models.CharField(max_length=3, default='EGP')
+============================================
+
+from __future__ import annotations
+from decimal import Decimal
+from typing import Optional
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
+
+from .core_models import GameZone
+
+User = get_user_model()
+
+class ChartOfAccounts(models.Model):
+    ACCOUNT_TYPE_CHOICES = [('asset','أصول'),('liability','خصوم'),('equity','حقوق ملكية'),
+                            ('revenue','إيرادات'),('expense','مصروفات'),('cost','تكلفة')]
+    BALANCE_TYPE_CHOICES = [('debit','مدين'),('credit','دائن')]
+    account_code = models.CharField(max_length=20, unique=True)
+    account_name = models.CharField(max_length=200)
+    account_type = models.CharField(max_length=20, choices=ACCOUNT_TYPE_CHOICES)
+    parent_account = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
+    level = models.IntegerField(default=1)
+    is_main_account = models.BooleanField(default=False)
+    balance_type = models.CharField(max_length=10, choices=BALANCE_TYPE_CHOICES)
+    opening_balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    current_balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    currency = models.CharField(max_length=3, default='EGP')
+    active = models.BooleanField(default=True)
+    class Meta:
+        ordering = ['account_code']
+    def __str__(self) -> str:
+        return f"{self.account_code} - {self.account_name}"
+
+def _get_account_or_error(code: str, label: str):
+    try:
+        return ChartOfAccounts.objects.get(account_code=code)
+    except ChartOfAccounts.DoesNotExist:
+        raise ValidationError(f"الحساب '{label}' برقم {code} غير موجود في دليل الحسابات.")
+
+class JournalEntry(models.Model):
+    ENTRY_TYPE_CHOICES = [('revenue','إيراد'),('expense','مصروف'),('transfer','تحويل'),
+                          ('adjustment','تسوية'),('opening','رصيد أول المدة'),('closing','قفل حسابات')]
+    entry_number = models.CharField(max_length=20, unique=True)
+    entry_date = models.DateField()
+    entry_type = models.CharField(max_length=20, choices=ENTRY_TYPE_CHOICES)
+    description = models.CharField(max_length=300)
+    total_debit = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_credit = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    zone = models.ForeignKey(GameZone, on_delete=models.SET_NULL, null=True, blank=True)
+    reference_type = models.CharField(max_length=20, blank=True)
+    reference_id = models.IntegerField(null=True, blank=True)
+    posted = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self) -> str:
+        return f"{self.entry_number} - {self.description}"
+    def save(self, *args, **kwargs) -> None:
+        if not self.entry_number:
+            last = JournalEntry.objects.order_by('-id').first()
+            next_num = 1
+            if last and last.entry_number and '-' in last.entry_number:
+                try:
+                    next_num = int(last.entry_number.split('-')[-1]) + 1
+                except Exception:
+                    next_num = (last.id or 0) + 1
+            self.entry_number = f"JE-{str(next_num).zfill(6)}"
+        super().save(*args, **kwargs)
+
+class JournalEntryLine(models.Model):
+    journal_entry = models.ForeignKey(JournalEntry, on_delete=models.CASCADE, related_name='lines')
+    account = models.ForeignKey(ChartOfAccounts, on_delete=models.CASCADE)
+    description = models.CharField(max_length=200)
+    debit = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    credit = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    currency = models.CharField(max_length=3, default='EGP')
+    exchange_rate = models.DecimalField(max_digits=10, decimal_places=4, default=1)
+    def clean(self):
+        if self.account and self.account.currency and self.currency and self.account.currency != self.currency:
+            raise ValidationError("عملة سطر القيد لا تطابق عملة الحساب المحاسبي.")
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super().save(*args, **kwargs)
+    def __str__(self) -> str:
+        return f"{self.journal_entry.entry_number} - {self.account.account_name}"
+
+class BankAccount(models.Model):
+    bank_name = models.CharField(max_length=200)
+    account_number = models.CharField(max_length=50)
+    account_name = models.CharField(max_length=200)
+    iban = models.CharField(max_length=50, blank=True)
+    swift_code = models.CharField(max_length=20, blank=True)
+    currency = models.CharField(max_length=3, default='EGP')
+    opening_balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    current_balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    chart_account = models.ForeignKey('ChartOfAccounts', on_delete=models.SET_NULL, null=True, blank=True)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self) -> str:
+        return f"{self.bank_name} - {self.account_number}"
+
+class Treasury(models.Model):
+    currency = models.CharField(max_length=3, unique=True)
+    balance = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    chart_account = models.ForeignKey('ChartOfAccounts', on_delete=models.SET_NULL, null=True, blank=True)
+    last_updated = models.DateTimeField(auto_now=True)
+    class Meta:
+        verbose_name = "خزينة"
+        verbose_name_plural = "الخزائن"
+    def __str__(self) -> str:
+        return f"خزينة {self.currency}: {self.balance}"
+
+class TreasuryTransaction(models.Model):
+    TRANSACTION_TYPES = [('revenue','إيراد'),('expense','مصروف'),('bank_deposit','إيداع بنكي'),
+                         ('bank_withdrawal','سحب من البنك'),('exchange_in','تحويل داخل'),('exchange_out','تحويل خارج'),
+                         ('partner_payment','دفعة شريك'),('opening','رصيد أول المدة'),('adjustment','تسوية')]
+    account_type = models.CharField(max_length=10, choices=[('treasury','خزينة'),('bank','بنك')])
+    treasury = models.ForeignKey(Treasury, on_delete=models.CASCADE, null=True, blank=True)
+    bank_account = models.ForeignKey(BankAccount, on_delete=models.CASCADE, null=True, blank=True)
+    transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    description = models.CharField(max_length=300)
+    reference_number = models.CharField(max_length=100, blank=True)
+    reference_type = models.CharField(max_length=20, blank=True)
+    reference_id = models.IntegerField(null=True, blank=True)
+    transaction_date = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    def __str__(self) -> str:
+        account_name = self.treasury.currency if self.treasury else (self.bank_account.bank_name if self.bank_account else '-')
+        return f"{account_name} - {self.amount} - {self.description}"
+
+class BankTransaction(models.Model):
+    TYPE_CHOICES = [('deposit','إيداع'),('withdrawal','سحب'),('transfer_in','تحويل وارد'),
+                    ('transfer_out','تحويل صادر'),('fee','رسوم'),('interest','فوائد')]
+    bank_account = models.ForeignKey(BankAccount, on_delete=models.CASCADE)
+    transaction_date = models.DateField()
+    transaction_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    description = models.CharField(max_length=300)
+    reference_number = models.CharField(max_length=100, blank=True)
+    beneficiary = models.CharField(max_length=200, blank=True)
+    purpose = models.CharField(max_length=300, blank=True)
+    balance_after = models.DecimalField(max_digits=15, decimal_places=2)
+    journal_entry = models.ForeignKey(JournalEntry, on_delete=models.SET_NULL, null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def save(self, *args, **kwargs) -> None:
+        is_new = self.pk is None
+        if is_new:
+            if self.transaction_type in ['deposit', 'transfer_in', 'interest']:
+                self.bank_account.current_balance += self.amount
+            else:
+                self.bank_account.current_balance -= self.amount
+            self.balance_after = self.bank_account.current_balance
+            self.bank_account.save(update_fields=['current_balance'])
+        super().save(*args, **kwargs)
+        if is_new:
+            self.create_journal_entry()
+    @transaction.atomic
+    def create_journal_entry(self) -> None:
+        journal_entry = JournalEntry.objects.create(
+            entry_date=self.transaction_date, entry_type='transfer',
+            description=f"معاملة بنكية — {self.description}",
+            reference_type='bank_transaction', reference_id=self.id,
+            created_by=self.created_by,
+        )
+        bank_account_chart = self.bank_account.chart_account
+        if not bank_account_chart:
+            raise ValidationError("لم يتم ربط حساب البنك بدليل الحسابات.")
+        treasury_account = get_treasury_account_for_currency(self.bank_account.currency)
+        if self.transaction_type in ['deposit', 'transfer_in']:
+            JournalEntryLine.objects.create(journal_entry=journal_entry, account=bank_account_chart,
+                                            description=f"إيداع — {self.description}", debit=self.amount,
+                                            currency=self.bank_account.currency)
+            JournalEntryLine.objects.create(journal_entry=journal_entry, account=treasury_account,
+                                            description=f"إيداع في {self.bank_account.bank_name}", credit=self.amount,
+                                            currency=self.bank_account.currency)
+        elif self.transaction_type in ['withdrawal', 'transfer_out']:
+            JournalEntryLine.objects.create(journal_entry=journal_entry, account=treasury_account,
+                                            description=f"سحب من {self.bank_account.bank_name}", debit=self.amount,
+                                            currency=self.bank_account.currency)
+            JournalEntryLine.objects.create(journal_entry=journal_entry, account=bank_account_chart,
+                                            description=f"سحب — {self.description}", credit=self.amount,
+                                            currency=self.bank_account.currency)
+        journal_entry.total_debit = self.amount
+        journal_entry.total_credit = self.amount
+        journal_entry.posted = True
+        journal_entry.save(update_fields=['total_debit','total_credit','posted'])
+        self.journal_entry = journal_entry
+        super().save(update_fields=['journal_entry'])
+
+class CurrencyExchange(models.Model):
+    from_currency = models.CharField(max_length=3)
+    to_currency = models.CharField(max_length=3)
+    from_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    exchange_rate = models.DecimalField(max_digits=10, decimal_places=4)
+    to_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    exchange_date = models.DateTimeField(auto_now_add=True)
+    journal_entry = models.ForeignKey(JournalEntry, on_delete=models.SET_NULL, null=True, blank=True)
+    exchanged_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    notes = models.TextField(blank=True)
+    def save(self, *args, **kwargs) -> None:
+        is_new = self.pk is None
+        self.to_amount = self.from_amount * self.exchange_rate
+        super().save(*args, **kwargs)
+        if is_new:
+            self.update_treasuries()
+            self.create_journal_entry()
+    @transaction.atomic
+    def update_treasuries(self) -> None:
+        from .accounting_finance import Treasury, TreasuryTransaction
+        from_treasury, _ = Treasury.objects.get_or_create(currency=self.from_currency)
+        to_treasury, _ = Treasury.objects.get_or_create(currency=self.to_currency)
+        from_treasury.balance -= self.from_amount
+        to_treasury.balance += self.to_amount
+        from_treasury.save(update_fields=['balance'])
+        to_treasury.save(update_fields=['balance'])
+        TreasuryTransaction.objects.create(account_type='treasury', treasury=from_treasury,
+                                           transaction_type='exchange_out', amount=-self.from_amount,
+                                           description=f"تحويل إلى {self.to_currency}",
+                                           reference_type='currency_exchange', reference_id=self.id,
+                                           created_by=self.exchanged_by)
+        TreasuryTransaction.objects.create(account_type='treasury', treasury=to_treasury,
+                                           transaction_type='exchange_in', amount=self.to_amount,
+                                           description=f"تحويل من {self.from_currency}",
+                                           reference_type='currency_exchange', reference_id=self.id,
+                                           created_by=self.exchanged_by)
+    @transaction.atomic
+    def create_journal_entry(self) -> None:
+        journal_entry = JournalEntry.objects.create(
+            entry_date=self.exchange_date.date(), entry_type='transfer',
+            description=f"تحويل عملة {self.from_amount} {self.from_currency} → {self.to_amount} {self.to_currency}",
+            reference_type='currency_exchange', reference_id=self.id, created_by=self.exchanged_by,
+        )
+        to_treasury_account = Treasury.objects.get(currency=self.to_currency).chart_account
+        from_treasury_account = Treasury.objects.get(currency=self.from_currency).chart_account
+        if not to_treasury_account or not from_treasury_account:
+            raise ValidationError("الرجاء ربط الخزائن بحساباتها في دليل الحسابات.")
+        JournalEntryLine.objects.create(journal_entry=journal_entry, account=to_treasury_account,
+                                        description=f"تحويل عملة — استلام {self.to_currency}",
+                                        debit=self.to_amount, currency=self.to_currency)
+        JournalEntryLine.objects.create(journal_entry=journal_entry, account=from_treasury_account,
+                                        description=f"تحويل عملة — صرف {self.from_currency}",
+                                        credit=self.from_amount, currency=self.from_currency)
+        journal_entry.total_debit = self.to_amount
+        journal_entry.total_credit = self.from_amount
+        journal_entry.posted = True
+        journal_entry.save(update_fields=['total_debit','total_credit','posted'])
+        self.journal_entry = journal_entry
+        super().save(update_fields=['journal_entry'])
+
+def get_treasury_account_for_currency(currency: str):
+    try:
+        treasury = Treasury.objects.get(currency=currency)
+    except Treasury.DoesNotExist:
+        raise ValidationError(f"لا توجد خزينة معرفة للعملة {currency}. أنشئ Treasury وربطها بحساب في الدليل.")
+    if not treasury.chart_account:
+        raise ValidationError(f"خزينة {currency} غير مربوطة بحساب في الدليل.")
+    if treasury.chart_account.currency and treasury.chart_account.currency != currency:
+        raise ValidationError("عملة حساب الخزينة لا تطابق عملة الخزينة.")
+    return treasury.chart_account
+
+def update_treasury_balance(*, currency: str, amount: Decimal, transaction_type: str, description: str, user: User, reference_id: Optional[int] = None) -> None:
+    with transaction.atomic():
+        treasury, _ = Treasury.objects.select_for_update().get_or_create(currency=currency)
+        treasury.balance += amount
+        treasury.save(update_fields=['balance'])
+        TreasuryTransaction.objects.create(
+            account_type='treasury', treasury=treasury, transaction_type=transaction_type,
+            amount=amount, description=description,
+            reference_type='partner_payment' if transaction_type == 'partner_payment' else '',
+            reference_id=reference_id, created_by=user,
+        )
+===========================================
+
+from __future__ import annotations
+from decimal import Decimal
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
+from django.utils import timezone
+
+from .core_models import (
+    Hotel, GameZone, GameType, Warehouse, Supplier, Customer, Game,
+    Item, StockMove, StockBalance, Department, Employee, AttendanceLog,
+    PayrollEntry, BillOfMaterials, BOMLine, WorkOrder,
+    ProductionConsumption, ProductionReceipt,
+)
+
+from .accounting_finance import (
+    ChartOfAccounts, JournalEntry, JournalEntryLine, Treasury, TreasuryTransaction,
+    BankAccount, BankTransaction, CurrencyExchange, get_treasury_account_for_currency,
+    update_treasury_balance, _get_account_or_error,
+)
+
+User = get_user_model()
+
+# ==============================
+# العمليات اليومية: الإيرادات والمصروفات
+# ==============================
+
+class DailyRevenue(models.Model):
+    PAYMENT_METHOD_CHOICES = [('cash','نقداً'),('card','بطاقة'),('mixed','مختلط')]
+    zone = models.ForeignKey(GameZone, on_delete=models.CASCADE)
+    date = models.DateField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='EGP')
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cash')
+    journal_entry = models.ForeignKey(JournalEntry, on_delete=models.SET_NULL, null=True, blank=True)
+    partner_shares_calculated = models.BooleanField(default=False)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        unique_together = ['zone','date','currency']
+    def __str__(self) -> str:
+        return f"{self.zone.name} — {self.date} — {self.amount} {self.currency}"
+    def save(self, *args, **kwargs) -> None:
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        if is_new:
+            self.create_journal_entry()
+            self.calculate_partner_shares()
+    @transaction.atomic
+    def create_journal_entry(self) -> None:
+        je = JournalEntry.objects.create(
+            entry_date=self.date, entry_type='revenue',
+            description=f"إيراد منطقة {self.zone.name} - {self.date}",
+            zone=self.zone, reference_type='revenue', reference_id=self.id,
+            created_by=self.created_by,
+        )
+        cash_acc = get_treasury_account_for_currency(self.currency)
+        JournalEntryLine.objects.create(journal_entry=je, account=cash_acc,
+                                        description=f"إيداع نقدي — {self.zone.name}",
+                                        debit=self.amount, currency=self.currency)
+        if not self.zone.revenue_account:
+            raise ValidationError("حساب إيرادات المنطقة غير محدد (revenue_account).")
+        rev_acc = _get_account_or_error(self.zone.revenue_account, 'إيرادات المنطقة')
+        JournalEntryLine.objects.create(journal_entry=je, account=rev_acc,
+                                        description=f"إيراد منطقة {self.zone.name}",
+                                        credit=self.amount, currency=self.currency)
+        je.total_debit = self.amount
+        je.total_credit = self.amount
+        je.posted = True
+        je.save(update_fields=['total_debit','total_credit','posted'])
+        self.journal_entry = je
+        super().save(update_fields=['journal_entry'])
+    def calculate_partner_shares(self) -> None:
+        if self.partner_shares_calculated:
+            return
+        partnerships = Partnership.objects.filter(zone=self.zone, active=True)
+        for p in partnerships:
+            share_amount = (self.amount * p.percentage) / Decimal('100')
+            PartnerAccount.objects.create(
+                partnership=p, transaction_date=self.date, transaction_type='revenue_share',
+                description=f"حصة من إيراد {self.date}", debit=share_amount,
+                currency=self.currency, revenue_id=self.id, created_by=self.created_by,
+            )
+        self.partner_shares_calculated = True
+        super().save(update_fields=['partner_shares_calculated'])
+
+class Expense(models.Model):
+    CATEGORY_CHOICES = [('rent','إيجارات'),('maintenance','صيانة'),('salary','رواتب'),('transport','مواصلات'),
+                        ('utilities','مرافق'),('marketing','دعاية وإعلان'),('supplies','مستلزمات'),
+                        ('insurance','تأمين'),('other','أخرى')]
+    zone = models.ForeignKey(GameZone, on_delete=models.CASCADE)
+    date = models.DateField()
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    description = models.CharField(max_length=300)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='EGP')
+    charge_partners = models.BooleanField(default=True)
+    partner_shares_calculated = models.BooleanField(default=False)
+    receipt_number = models.CharField(max_length=100, blank=True)
+    supplier = models.CharField(max_length=200, blank=True)
+    journal_entry = models.ForeignKey(JournalEntry, on_delete=models.SET_NULL, null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self) -> str:
+        return f"{self.description} — {self.amount} {self.currency}"
+    def save(self, *args, **kwargs) -> None:
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        if is_new:
+            self.create_journal_entry()
+            if self.charge_partners:
+                self.calculate_partner_expense_shares()
+    @transaction.atomic
+    def create_journal_entry(self) -> None:
+        je = JournalEntry.objects.create(
+            entry_date=self.date, entry_type='expense',
+            description=f"مصروف {self.get_category_display()} — {self.zone.name}",
+            zone=self.zone, reference_type='expense', reference_id=self.id,
+            created_by=self.created_by,
+        )
+        if not self.zone.expense_account:
+            raise ValidationError("حساب مصروفات المنطقة غير محدد (expense_account).")
+        exp_acc = _get_account_or_error(self.zone.expense_account, 'مصروفات المنطقة')
+        JournalEntryLine.objects.create(journal_entry=je, account=exp_acc,
+                                        description=f"مصروف: {self.description}", debit=self.amount,
+                                        currency=self.currency)
+        cash_acc = get_treasury_account_for_currency(self.currency)
+        JournalEntryLine.objects.create(journal_entry=je, account=cash_acc,
+                                        description=f"صرف نقدي — {self.description}", credit=self.amount,
+                                        currency=self.currency)
+        je.total_debit = self.amount
+        je.total_credit = self.amount
+        je.posted = True
+        je.save(update_fields=['total_debit','total_credit','posted'])
+        self.journal_entry = je
+        super().save(update_fields=['journal_entry'])
+    def calculate_partner_expense_shares(self) -> None:
+        if self.partner_shares_calculated:
+            return
+        partnerships = Partnership.objects.filter(zone=self.zone, active=True, share_expenses=True)
+        for p in partnerships:
+            expense_percentage = p.get_expense_percentage()
+            share_amount = (self.amount * expense_percentage) / Decimal('100')
+            PartnerAccount.objects.create(
+                partnership=p, transaction_date=self.date, transaction_type='expense_share',
+                description=f"حصة من مصروف {self.get_category_display()} — {self.description[:50]}",
+                credit=share_amount, currency=self.currency, expense_id=self.id, created_by=self.created_by,
+            )
+        self.partner_shares_calculated = True
+        super().save(update_fields=['partner_shares_calculated'])
+
+# ==============================
+# الشركاء
+# ==============================
+
+class Partnership(models.Model):
+    PARTNER_TYPE_CHOICES = [('individual','فرد'),('company','شركة'),('investor','مستثمر')]
+    zone = models.ForeignKey(GameZone, on_delete=models.CASCADE, related_name='partnerships')
+    partner_name = models.CharField(max_length=200)
+    partner_type = models.CharField(max_length=20, choices=PARTNER_TYPE_CHOICES)
+    national_id = models.CharField(max_length=20, blank=True)
+    commercial_register = models.CharField(max_length=50, blank=True)
+    percentage = models.DecimalField(max_digits=5, decimal_places=2)
+    investment_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    currency = models.CharField(max_length=3, default='EGP')
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+    partner_account = models.CharField(max_length=20, blank=True)
+    share_expenses = models.BooleanField(default=True)
+    expense_percentage = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True)
+    class Meta:
+        unique_together = ['zone','partner_name']
+    def __str__(self) -> str:
+        return f"{self.partner_name} - {self.zone.name} ({self.percentage}%)"
+    def get_expense_percentage(self) -> Decimal:
+        return self.expense_percentage or self.percentage if self.share_expenses else Decimal('0')
+
+class PartnerAccount(models.Model):
+    TRANSACTION_TYPES = [('revenue_share','حصة من الإيرادات'),('expense_share','حصة من المصروفات'),
+                         ('payment_received','مبلغ مستلم'),('payment_made','مبلغ مدفوع'),
+                         ('adjustment','تسوية'),('opening_balance','رصيد أول المدة')]
+    partnership = models.ForeignKey(Partnership, on_delete=models.CASCADE)
+    transaction_date = models.DateField()
+    transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
+    description = models.CharField(max_length=300)
+    debit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    credit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    currency = models.CharField(max_length=3, default='EGP')
+    revenue_id = models.IntegerField(null=True, blank=True)
+    expense_id = models.IntegerField(null=True, blank=True)
+    payment_id = models.IntegerField(null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        ordering = ['-transaction_date','-created_at']
+    def __str__(self) -> str:
+        return f"{self.partnership.partner_name} - {self.transaction_date} - {self.balance}"
+    def save(self, *args, **kwargs) -> None:
+        if self.pk is None:
+            last = PartnerAccount.objects.filter(partnership=self.partnership).order_by('-created_at').first()
+            previous_balance = last.balance if last else Decimal('0')
+            self.balance = previous_balance + self.debit - self.credit
+        super().save(*args, **kwargs)
+
+class PartnerPayment(models.Model):
+    PAYMENT_METHOD_CHOICES = [('cash','نقداً'),('bank_transfer','تحويل بنكي'),('check','شيك'),('credit_card','بطاقة ائتمان')]
+    partnership = models.ForeignKey(Partnership, on_delete=models.CASCADE)
+    payment_date = models.DateField()
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default='EGP')
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
+    reference_number = models.CharField(max_length=100, blank=True)
+    notes = models.TextField(blank=True)
+    treasury_updated = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self) -> str:
+        return f"دفعة {self.partnership.partner_name} — {self.amount} {self.currency}"
+    def save(self, *args, **kwargs) -> None:
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        if is_new and not self.treasury_updated:
+            PartnerAccount.objects.create(
+                partnership=self.partnership, transaction_date=self.payment_date, transaction_type='payment_received',
+                description=f"مبلغ مستلم — {self.get_payment_method_display()}", credit=self.amount,
+                currency=self.currency, payment_id=self.id, created_by=self.created_by,
+            )
+            update_treasury_balance(currency=self.currency, amount=self.amount, transaction_type='partner_payment',
+                                    description=f"دفعة من الشريك {self.partnership.partner_name}",
+                                    user=self.created_by, reference_id=self.id)
+            self.treasury_updated = True
+            super().save(update_fields=['treasury_updated'])
+
+# ==============================
+# المشتريات والمبيعات + الاستيراد
+# ==============================
+
+class PurchaseOrder(models.Model):
+    STATUS_CHOICES = [('draft','مسودة'),('sent','مرسل'),('confirmed','مؤكد'),
+                      ('partial','استلام جزئي'),('completed','مكتمل'),('cancelled','ملغي')]
+    order_number = models.CharField(max_length=20, unique=True)
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
+    order_date = models.DateField()
+    expected_delivery = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    currency = models.CharField(max_length=3, default='USD')
+    journal_entry = models.ForeignKey(JournalEntry, on_delete=models.SET_NULL, null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self) -> str:
+        return f"{self.order_number} - {self.supplier.name}"
+    def save(self, *args, **kwargs) -> None:
+        if not self.order_number:
+            last = PurchaseOrder.objects.order_by('-id').first()
+            next_num = (last.id + 1) if last else 1
+            self.order_number = f"PO-{str(next_num).zfill(6)}"
+        super().save(*args, **kwargs)
+
+class PurchaseOrderItem(models.Model):
+    purchase_order = models.ForeignKey(PurchaseOrder, on_delete=models.CASCADE, related_name='items')
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    description = models.CharField(max_length=300, blank=True)
+    quantity = models.DecimalField(max_digits=12, decimal_places=3)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    total_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    def save(self, *args, **kwargs) -> None:
+        self.total_price = (self.quantity or 0) * (self.unit_price or 0)
+        super().save(*args, **kwargs)
+
+class GoodsReceipt(models.Model):
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
+    warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
+    receipt_date = models.DateField()
+    currency = models.CharField(max_length=3, default='EGP')
+    ref = models.CharField(max_length=100, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class GoodsReceiptItem(models.Model):
+    grn = models.ForeignKey(GoodsReceipt, on_delete=models.CASCADE, related_name='items')
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    qty = models.DecimalField(max_digits=12, decimal_places=3)
+    unit_cost = models.DecimalField(max_digits=12, decimal_places=4)
+
+class PurchaseInvoice(models.Model):
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
+    invoice_number = models.CharField(max_length=50)
+    invoice_date = models.DateField()
+    currency = models.CharField(max_length=3, default='EGP')
+    subtotal = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    tax_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    other_costs = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class ImportShipment(models.Model):
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
+    bl_number = models.CharField(max_length=100)
+    eta = models.DateField(null=True, blank=True)
+    currency = models.CharField(max_length=3, default='USD')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class ImportCharge(models.Model):
+    shipment = models.ForeignKey(ImportShipment, on_delete=models.CASCADE, related_name='charges')
+    name = models.CharField(max_length=150)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    currency = models.CharField(max_length=3, default='USD')
+
+class LandedCostAllocation(models.Model):
+    shipment = models.ForeignKey(ImportShipment, on_delete=models.CASCADE, related_name='allocations')
+    grn_item = models.ForeignKey(GoodsReceiptItem, on_delete=models.CASCADE)
+    allocated_amount = models.DecimalField(max_digits=14, decimal_places=2)
+    currency = models.CharField(max_length=3, default='USD')
+
+class SalesOrder(models.Model):
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    order_number = models.CharField(max_length=30, unique=True)
+    order_date = models.DateField()
+    currency = models.CharField(max_length=3, default='EGP')
+    status = models.CharField(max_length=20, default='draft')  # draft/confirmed/delivered/invoiced
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class SalesOrderItem(models.Model):
+    order = models.ForeignKey(SalesOrder, on_delete=models.CASCADE, related_name='items')
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    qty = models.DecimalField(max_digits=12, decimal_places=3)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=4)
+
+class SalesInvoice(models.Model):
+    STATUS_CHOICES = [('draft','مسودة'),('sent','مرسلة'),('partial','دفع جزئي'),
+                      ('paid','مدفوعة'),('overdue','متأخرة'),('cancelled','ملغية')]
+    invoice_number = models.CharField(max_length=20, unique=True)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    invoice_date = models.DateField()
+    due_date = models.DateField(null=True, blank=True)
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    remaining_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    currency = models.CharField(max_length=3, default='EGP')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    journal_entry = models.ForeignKey(JournalEntry, on_delete=models.SET_NULL, null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self) -> str:
+        return f"{self.invoice_number} - {self.customer.name}"
+    def save(self, *args, **kwargs) -> None:
+        if not self.invoice_number:
+            last = SalesInvoice.objects.order_by('-id').first()
+            next_num = (last.id + 1) if last else 1
+            self.invoice_number = f"SI-{str(next_num).zfill(6)}"
+        self.remaining_amount = (self.total_amount or Decimal('0')) - (self.paid_amount or Decimal('0'))
+        if self.total_amount and self.remaining_amount == 0:
+            self.status = 'paid'
+        elif self.paid_amount and self.paid_amount > 0:
+            self.status = 'partial'
+        super().save(*args, **kwargs)
+
+class SalesInvoiceItem(models.Model):
+    sales_invoice = models.ForeignKey(SalesInvoice, on_delete=models.CASCADE, related_name='items')
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    description = models.CharField(max_length=300, blank=True)
+    quantity = models.DecimalField(max_digits=12, decimal_places=3, default=1)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    total_price = models.DecimalField(max_digits=12, decimal_places=2)
+    def save(self, *args, **kwargs) -> None:
+        self.total_price = (self.quantity or 0) * (self.unit_price or 0)
+        super().save(*args, **kwargs)
+
+# ==============================
+# التقارير والفترات
+# ==============================
+
+class FinancialPeriod(models.Model):
+    PERIOD_CHOICES = [('monthly','شهرية'),('quarterly','ربع سنوية'),('annual','سنوية')]
+    name = models.CharField(max_length=100)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    period_type = models.CharField(max_length=20, choices=PERIOD_CHOICES)
+    closed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self) -> str:
+        return f"{self.name} ({self.start_date} - {self.end_date})"
+
+class IncomeStatement(models.Model):
+    period = models.ForeignKey(FinancialPeriod, on_delete=models.CASCADE)
+    zone = models.ForeignKey(GameZone, on_delete=models.CASCADE, null=True, blank=True)
+    total_revenue = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    direct_costs = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    operating_expenses = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    administrative_expenses = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    gross_profit = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    net_profit = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_partner_shares = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    company_net_profit = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    currency = models.CharField(max_length=3, default='EGP')
+    generated_at = models.DateTimeField(auto_now_add=True)
+    generated_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    def __str__(self) -> str:
+        zone_name = self.zone.name if self.zone else 'إجمالي الشركة'
+        return f"قائمة دخل {zone_name} — {self.period.name}"
+    def calculate_profit(self) -> None:
+        self.gross_profit = (self.total_revenue or Decimal('0')) - (self.direct_costs or Decimal('0'))
+        self.net_profit = self.gross_profit - (self.operating_expenses or Decimal('0')) - (self.administrative_expenses or Decimal('0'))
+        self.company_net_profit = self.net_profit - (self.total_partner_shares or Decimal('0'))
+        self.save(update_fields=['gross_profit','net_profit','company_net_profit'])
+
+# ==============================
+# تكامل المخزون
+# ==============================
+
+def _apply_stock_in(warehouse, item, qty, unit_cost, currency):
+    bal, _ = StockBalance.objects.get_or_create(warehouse=warehouse, item=item, defaults={"currency": currency})
+    total_cost_before = bal.qty_on_hand * bal.avg_cost
+    total_cost_after = total_cost_before + (qty * unit_cost)
+    new_qty = bal.qty_on_hand + qty
+    bal.avg_cost = (total_cost_after / new_qty) if new_qty else unit_cost
+    bal.qty_on_hand = new_qty
+    bal.currency = currency
+    bal.save(update_fields=["qty_on_hand","avg_cost","currency"])
+
+def _apply_stock_out(warehouse, item, qty):
+    bal = StockBalance.objects.select_for_update().get(warehouse=warehouse, item=item)
+    if bal.qty_on_hand < qty:
+        raise ValidationError("لا توجد كمية كافية للصرف من هذا المخزن.")
+    bal.qty_on_hand = bal.qty_on_hand - qty
+    bal.save(update_fields=["qty_on_hand"])
+    return bal.avg_cost
+
+def post_grn_to_stock(grn):
+    for it in grn.items.all():
+        _apply_stock_in(grn.warehouse, it.item, it.qty, it.unit_cost, grn.currency)
+        StockMove.objects.create(item=it.item, from_warehouse=None, to_warehouse=grn.warehouse, move_type='in',
+                                 qty=it.qty, uom=it.item.uom, unit_cost=it.unit_cost, currency=grn.currency,
+                                 ref=f"GRN#{grn.id}", created_by=grn.created_by)
+
+def post_sales_delivery_to_stock(warehouse, order):
+    for it in order.items.all():
+        avg_cost = _apply_stock_out(warehouse, it.item, it.qty)
+        StockMove.objects.create(item=it.item, from_warehouse=warehouse, to_warehouse=None, move_type='out',
+                                 qty=it.qty, uom=it.item.uom, unit_cost=avg_cost, currency=order.currency,
+                                 ref=f"SO#{order.order_number}", created_by=order.created_by)
+
+def create_purchase_invoice_entry(pi, inventory_account_code: str, supplier_account_code: str):
+    je = JournalEntry.objects.create(entry_date=pi.invoice_date, entry_type='adjustment',
+                                     description=f"فاتورة شراء {pi.invoice_number}", created_by=pi.created_by)
+    inv_acc = ChartOfAccounts.objects.get(account_code=inventory_account_code)
+    sup_acc = ChartOfAccounts.objects.get(account_code=supplier_account_code)
+    JournalEntryLine.objects.create(journal_entry=je, account=inv_acc, description='مخزون',
+                                    debit=pi.subtotal + pi.other_costs, currency=pi.currency)
+    JournalEntryLine.objects.create(journal_entry=je, account=sup_acc, description='دائن المورد',
+                                    credit=pi.total, currency=pi.currency)
+    je.total_debit = pi.subtotal + pi.other_costs
+    je.total_credit = pi.total
+    je.posted = True
+    je.save(update_fields=['total_debit','total_credit','posted'])
+    return je
+
+def create_sales_invoice_entry(si, revenue_account_code: str, receivable_account_code: str, cogs_account_code: str, inventory_account_code: str):
+    je = JournalEntry.objects.create(entry_date=si.invoice_date, entry_type='revenue',
+                                     description=f"فاتورة مبيعات {si.invoice_number}", created_by=si.created_by)
+    rev_acc = ChartOfAccounts.objects.get(account_code=revenue_account_code)
+    rec_acc = ChartOfAccounts.objects.get(account_code=receivable_account_code)
+    cogs_acc = ChartOfAccounts.objects.get(account_code=cogs_account_code)
+    inv_acc = ChartOfAccounts.objects.get(account_code=inventory_account_code)
+    JournalEntryLine.objects.create(journal_entry=je, account=rec_acc, description='مدين العملاء',
+                                    debit=si.total_amount, currency=si.currency)
+    JournalEntryLine.objects.create(journal_entry=je, account=rev_acc, description='إيراد مبيعات',
+                                    credit=si.subtotal - si.discount_amount, currency=si.currency)
+    estimated_cogs = si.subtotal * Decimal('0.6') if si.subtotal else Decimal('0')
+    JournalEntryLine.objects.create(journal_entry=je, account=cogs_acc, description='تكلفة مباعة',
+                                    debit=estimated_cogs, currency=si.currency)
+    JournalEntryLine.objects.create(journal_entry=je, account=inv_acc, description='إنقاص المخزون',
+                                    credit=estimated_cogs, currency=si.currency)
+    je.total_debit = si.total_amount + estimated_cogs
+    je.total_credit = (si.subtotal - si.discount_amount) + estimated_cogs
+    je.posted = True
+    je.save(update_fields=['total_debit','total_credit','posted'])
+    return je
+
+# ==============================
+# التحويلات والتسويات
+# ==============================
+
+class StockTransfer(models.Model):
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    from_warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE, related_name='xfer_from')
+    to_warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE, related_name='xfer_to')
+    qty = models.DecimalField(max_digits=12, decimal_places=3)
+    currency = models.CharField(max_length=3, default='EGP')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class StockAdjustment(models.Model):
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
+    qty_delta = models.DecimalField(max_digits=12, decimal_places=3)
+    reason = models.CharField(max_length=200, blank=True)
+    currency = models.CharField(max_length=3, default='EGP')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+# ==============================
+# admin.py — تسجيل النماذج
+# ==============================
+
+from django.contrib import admin
+
+@admin.register(DailyRevenue)
+class DailyRevenueAdmin(admin.ModelAdmin):
+    list_display = ("zone","date","amount","currency","payment_method","partner_shares_calculated")
+    list_filter = ("payment_method","currency","partner_shares_calculated")
+    date_hierarchy = "date"
+
+@admin.register(Expense)
+class ExpenseAdmin(admin.ModelAdmin):
+    list_display = ("zone","date","category","amount","currency","charge_partners","partner_shares_calculated")
+    list_filter = ("category","currency","charge_partners","partner_shares_calculated")
+    date_hierarchy = "date"
+
+@admin.register(Partnership)
+class PartnershipAdmin(admin.ModelAdmin):
+    list_display = ("zone","partner_name","percentage","share_expenses","active")
+    list_filter = ("zone","partner_type","active")
+    search_fields = ("partner_name","zone__name")
+
+@admin.register(PartnerAccount)
+class PartnerAccountAdmin(admin.ModelAdmin):
+    list_display = ("partnership","transaction_date","transaction_type","debit","credit","balance","currency")
+    list_filter = ("transaction_type","currency")
+    date_hierarchy = "transaction_date"
+
+@admin.register(PartnerPayment)
+class PartnerPaymentAdmin(admin.ModelAdmin):
+    list_display = ("partnership","payment_date","amount","currency","payment_method","treasury_updated")
+    list_filter = ("payment_method","currency","treasury_updated")
+
+class PurchaseOrderItemInline(admin.TabularInline):
+    model = PurchaseOrderItem
+    extra = 0
+
+@admin.register(PurchaseOrder)
+class PurchaseOrderAdmin(admin.ModelAdmin):
+    list_display = ("order_number","supplier","order_date","status","total_amount","currency")
+    inlines = [PurchaseOrderItemInline]
+    date_hierarchy = "order_date"
+
+@admin.register(GoodsReceipt)
+class GoodsReceiptAdmin(admin.ModelAdmin):
+    list_display = ("supplier","warehouse","receipt_date","currency")
+    date_hierarchy = "receipt_date"
+
+@admin.register(PurchaseInvoice)
+class PurchaseInvoiceAdmin(admin.ModelAdmin):
+    list_display = ("supplier","invoice_number","invoice_date","total","currency")
+    date_hierarchy = "invoice_date"
+
+@admin.register(ImportShipment)
+class ImportShipmentAdmin(admin.ModelAdmin):
+    list_display = ("supplier","bl_number","eta","currency")
+    date_hierarchy = "eta"
+
+@admin.register(SalesOrder)
+class SalesOrderAdmin(admin.ModelAdmin):
+    list_display = ("order_number","customer","order_date","status","currency")
+    date_hierarchy = "order_date"
+
+@admin.register(SalesInvoice)
+class SalesInvoiceAdmin(admin.ModelAdmin):
+    list_display = ("invoice_number","customer","invoice_date","status","total_amount","paid_amount","remaining_amount")
+    date_hierarchy = "invoice_date"
+
+@admin.register(SalesInvoiceItem)
+class SalesInvoiceItemAdmin(admin.ModelAdmin):
+    list_display = ("sales_invoice","item","quantity","unit_price","total_price")
+
+@admin.register(FinancialPeriod)
+class FinancialPeriodAdmin(admin.ModelAdmin):
+    list_display = ("name","start_date","end_date","period_type","closed")
+    date_hierarchy = "start_date"
+
+@admin.register(IncomeStatement)
+class IncomeStatementAdmin(admin.ModelAdmin):
+    list_display = ("period","zone","total_revenue","net_profit","company_net_profit","currency")

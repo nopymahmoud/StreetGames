@@ -1,0 +1,19 @@
+{% load crispy_forms_tags %}
+{{ formset.management_form }}
+<div class="table-responsive">
+<table class="table table-sm align-middle">
+  <thead class="table-light"><tr><th>الحساب</th><th>الوصف</th><th style="width:110px">الكمية</th><th style="width:140px">سعر الوحدة</th><th style="width:70px"></th></tr></thead>
+  <tbody>
+  {% for form in formset %}
+    <tr>
+      <td>{{ form.account }}</td>
+      <td>{{ form.description }}</td>
+      <td>{{ form.qty }}</td>
+      <td>{{ form.unit_price }}</td>
+      <td class="text-nowrap">{% if form.instance.pk %}<input type="checkbox" name="{{ form.prefix }}-DELETE"> حذف{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+

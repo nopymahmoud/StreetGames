@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+
+{% block title %}تقرير العملات - Street Games V2{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-0">
+            <i class="bi bi-currency-exchange text-primary"></i>
+            تقرير العملات المتعددة
+        </h1>
+        <p class="text-muted">عرض شامل لجميع الأرصدة والحركات حسب العملة</p>
+    </div>
+</div>
+
+<!-- Currency Summary -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-pie-chart"></i> ملخص العملات
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for currency_data in currency_summary %}
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <div class="card border-primary">
+                                <div class="card-header bg-primary text-white text-center">
+                                    <h4 class="mb-0">{{ currency_data.currency }}</h4>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <h6 class="text-success">الخزينة</h6>
+                                            <h5 class="text-success">{{ currency_data.treasury_balance|money }}</h5>
+                                        </div>
+                                        <div class="col-6">
+                                            <h6 class="text-info">البنوك</h6>
+                                            <h5 class="text-info">{{ currency_data.bank_balance|money }}</h5>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <small class="text-muted">الإيرادات</small>
+                                            <div class="text-success fw-bold">{{ currency_data.total_revenue|money }}</div>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">المصروفات</small>
+                                            <div class="text-danger fw-bold">{{ currency_data.total_expenses|money }}</div>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="text-center">
+                                        <small class="text-muted">صافي الدخل</small>
+                                        <h5 class="{% if currency_data.net_income > 0 %}text-success{% elif currency_data.net_income < 0 %}text-danger{% else %}text-muted{% endif %}">
+                                            {{ currency_data.net_income|money }}
+                                        </h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="col-12">
+                            <div class="text-center py-4">
+                                <i class="bi bi-currency-exchange display-4 text-muted"></i>
+                                <h4 class="text-muted mt-3">لا توجد بيانات عملات</h4>
+                                <p class="text-muted">ستظهر البيانات عند إدخال إيرادات أو مصروفات</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Partner Balances by Currency -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-people"></i> أرصدة الشركاء حسب العملة
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if partner_balances %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>الشريك</th>
+                                    <th>المنطقة</th>
+                                    <th>النسبة</th>
+                                    {% for currency in currencies %}
+                                        <th class="text-center">{{ currency }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for partner_data in partner_balances %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ partner_data.partnership.partner_name }}</strong>
+                                            <br><small class="text-muted">{{ partner_data.partnership.get_partner_type_display }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ partner_data.partnership.zone.code }}</span>
+                                            {{ partner_data.partnership.zone.name }}
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-info">{{ partner_data.partnership.percentage }}%</span>
+                                        </td>
+                                        {% for currency in currencies %}
+                                            <td class="text-center">
+                                                {% with balance=partner_data.balances|default_if_none:0 %}
+                                                    {% if balance %}
+                                                        <span class="fw-bold {% if balance > 0 %}text-success{% elif balance < 0 %}text-danger{% else %}text-muted{% endif %}">
+                                                            {{ balance|money }}
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="text-muted">-</span>
+                                                    {% endif %}
+                                                {% endwith %}
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-people display-4 text-muted"></i>
+                        <h4 class="text-muted mt-3">لا توجد أرصدة شركاء</h4>
+                        <p class="text-muted">ستظهر الأرصدة عند إدخال إيرادات أو مصروفات</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Currency Exchange Info -->
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h6><i class="bi bi-info-circle"></i> معلومات النظام متعدد العملات:</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="mb-0">
+                        <li>كل عملة لها خزينة منفصلة ومستقلة</li>
+                        <li>أرصدة الشركاء محفوظة لكل عملة على حدة</li>
+                        <li>لا يتم تحويل العملات تلقائياً</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="mb-0">
+                        <li>الإيرادات والمصروفات تُسجل بعملتها الأصلية</li>
+                        <li>حصص الشركاء تُحسب بنفس عملة الإيراد/المصروف</li>
+                        <li>التقارير تعرض كل عملة منفصلة</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning"></i> إجراءات سريعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'accounting:revenue_create' %}" class="btn btn-outline-success w-100">
+                            <i class="bi bi-plus-circle"></i> إيراد جديد
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'accounting:expense_create' %}" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-plus-circle"></i> مصروف جديد
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'partnerships:payment_create' %}" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-cash"></i> دفعة شريك
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'treasury:treasury_dashboard' %}" class="btn btn-outline-info w-100">
+                            <i class="bi bi-safe"></i> الخزينة والبنوك
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

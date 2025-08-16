@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}اختبار الروابط - Street Games V2{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">🔗 اختبار جميع روابط النظام</h1>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">الشراكات</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <a href="{% url 'partnerships:partnerships_list' %}" class="btn btn-outline-primary btn-sm">
+                                قائمة الشراكات
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{% url 'partnerships:partner_accounts_list' %}" class="btn btn-outline-info btn-sm">
+                                كشوف حسابات الشركاء
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{% url 'partnerships:payments_list' %}" class="btn btn-outline-success btn-sm">
+                                قائمة المدفوعات
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{% url 'partnerships:partnership_create' %}" class="btn btn-outline-warning btn-sm">
+                                إضافة شراكة جديدة
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{% url 'partnerships:payment_create' %}" class="btn btn-outline-danger btn-sm">
+                                إضافة دفعة جديدة
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">المحاسبة</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <a href="{% url 'accounting:dashboard' %}" class="btn btn-outline-primary btn-sm">
+                                لوحة المحاسبة
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{% url 'accounting:revenues_list' %}" class="btn btn-outline-success btn-sm">
+                                قائمة الإيرادات
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{% url 'accounting:expenses_list' %}" class="btn btn-outline-danger btn-sm">
+                                قائمة المصروفات
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{% url 'accounting:revenue_create' %}" class="btn btn-outline-info btn-sm">
+                                إضافة إيراد جديد
+                            </a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{% url 'accounting:expense_create' %}" class="btn btn-outline-warning btn-sm">
+                                إضافة مصروف جديد
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">التقارير</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <a href="{% url 'accounting:reports_dashboard' %}" class="btn btn-outline-primary w-100 mb-2">
+                                لوحة التقارير
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'accounting:balance_sheet' %}" class="btn btn-outline-success w-100 mb-2">
+                                الميزانية العمومية
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'accounting:income_statement' %}" class="btn btn-outline-info w-100 mb-2">
+                                قائمة الدخل
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'accounting:trial_balance' %}" class="btn btn-outline-warning w-100 mb-2">
+                                ميزان المراجعة
+                            </a>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <a href="{% url 'accounting:partner_statements' %}" class="btn btn-outline-danger w-100 mb-2">
+                                كشوف الشركاء
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'treasury:treasury_dashboard' %}" class="btn btn-outline-success w-100 mb-2">
+                                الخزينة والبنوك
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">الإدارة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <a href="{% url 'core:dashboard' %}" class="btn btn-outline-primary w-100 mb-2">
+                                الصفحة الرئيسية
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'admin:index' %}" class="btn btn-outline-success w-100 mb-2">
+                                لوحة الإدارة
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="/admin/logout/" class="btn btn-outline-danger w-100 mb-2">
+                                تسجيل الخروج
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="alert alert-info mt-4">
+        <h6><i class="bi bi-info-circle"></i> تعليمات الاختبار:</h6>
+        <ul class="mb-0">
+            <li>اضغط على كل رابط للتأكد من أنه يعمل بشكل صحيح</li>
+            <li>تأكد من أن الصفحات تحمل بدون أخطاء</li>
+            <li>اختبر إضافة وتعديل البيانات</li>
+            <li>تأكد من أن التقارير تعرض البيانات بشكل صحيح</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

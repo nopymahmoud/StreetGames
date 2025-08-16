@@ -1,0 +1,300 @@
+{% extends 'base.html' %}
+
+{% block title %}إدارة المخازن - Street Games V2{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-box text-primary"></i>
+                    إدارة المخازن
+                </h1>
+                <p class="text-muted">إدارة وعرض جميع المخازن في النظام</p>
+            </div>
+            <div>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWarehouseModal">
+                    <i class="bi bi-plus-circle"></i> إضافة مخزن جديد
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Warehouses Statistics -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_warehouses|default:0 }}</h4>
+                        <p class="card-text">إجمالي المخازن</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-box fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ active_warehouses|default:0 }}</h4>
+                        <p class="card-text">المخازن النشطة</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-check-circle fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">0</h4>
+                        <p class="card-text">المخزون المتاح</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-boxes fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">0</h4>
+                        <p class="card-text">قيمة المخزون</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-currency-dollar fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Warehouses List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-list"></i> قائمة المخازن
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if warehouses %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>اسم المخزن</th>
+                                    <th>الموقع</th>
+                                    <th>المسؤول</th>
+                                    <th>الحالة</th>
+                                    <th>تاريخ الإنشاء</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for warehouse in warehouses %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ warehouse.name }}</strong>
+                                            {% if warehouse.description %}
+                                                <br><small class="text-muted">{{ warehouse.description|truncatechars:50 }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if warehouse.location %}
+                                                <i class="bi bi-geo-alt text-primary"></i>
+                                                {{ warehouse.location|truncatechars:30 }}
+                                            {% else %}
+                                                <span class="text-muted">غير محدد</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if warehouse.manager %}
+                                                <i class="bi bi-person text-primary"></i>
+                                                {{ warehouse.manager }}
+                                            {% else %}
+                                                <span class="text-muted">غير محدد</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if warehouse.active %}
+                                                <span class="badge bg-success">نشط</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">غير نشط</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ warehouse.created_at|date:"Y-m-d" }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#editWarehouseModal-{{ warehouse.id }}" title="تعديل">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <form method="post" action="{% url 'core:warehouse_delete' warehouse.id %}" onsubmit="return confirm('حذف هذا المخزن؟');">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-outline-danger" title="حذف">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+
+                                            <!-- Edit Warehouse Modal -->
+                                            <div class="modal fade" id="editWarehouseModal-{{ warehouse.id }}" tabindex="-1">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title"><i class="bi bi-pencil-square text-warning"></i> تعديل المخزن</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <form method="post" action="{% url 'core:warehouse_update' warehouse.id %}">
+                                                            {% csrf_token %}
+                                                            <div class="modal-body">
+                                                                <div class="mb-3">
+                                                                    <label class="form-label">الاسم</label>
+                                                                    <input type="text" class="form-control" name="name" value="{{ warehouse.name }}" required>
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label class="form-label">العنوان</label>
+                                                                    <input type="text" class="form-control" name="location" value="{{ warehouse.location }}">
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label class="form-label">النوع</label>
+                                                                    <select class="form-select" name="warehouse_type">
+                                                                        <option value="main" {% if warehouse.warehouse_type == 'main' %}selected{% endif %}>مخزن رئيسي</option>
+                                                                        <option value="branch" {% if warehouse.warehouse_type == 'branch' %}selected{% endif %}>مخزن فرعي</option>
+                                                                        <option value="maintenance" {% if warehouse.warehouse_type == 'maintenance' %}selected{% endif %}>مخزن صيانة</option>
+                                                                        <option value="spare_parts" {% if warehouse.warehouse_type == 'spare_parts' %}selected{% endif %}>مخزن قطع غيار</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input" type="checkbox" name="active" id="whActive{{ warehouse.id }}" {% if warehouse.active %}checked{% endif %}>
+                                                                    <label class="form-check-label" for="whActive{{ warehouse.id }}">نشط</label>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                                                <button type="submit" class="btn btn-primary"><i class="bi bi-check"></i> حفظ</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-box text-muted" style="font-size: 4rem;"></i>
+                        <h4 class="text-muted mt-3">لا توجد مخازن</h4>
+                        <p class="text-muted">ابدأ بإضافة مخزن جديد</p>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWarehouseModal">
+                            <i class="bi bi-plus-circle"></i> إضافة مخزن جديد
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Warehouse Modal -->
+<div class="modal fade" id="addWarehouseModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle text-primary"></i>
+                    إضافة مخزن جديد
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'core:warehouse_create' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">اسم المخزن *</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="code" class="form-label">كود المخزن</label>
+                            <input type="text" class="form-control" id="code" name="code">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="location" class="form-label">الموقع</label>
+                        <input type="text" class="form-control" id="location" name="location">
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">الوصف</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="active" name="active" checked>
+                        <label class="form-check-label" for="active">
+                            مخزن نشط
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check"></i> إضافة المخزن
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewWarehouse(warehouseId) {
+    alert('عرض تفاصيل المخزن #' + warehouseId);
+}
+
+function editWarehouse(warehouseId) {
+    alert('تعديل المخزن #' + warehouseId);
+}
+
+function manageInventory(warehouseId) {
+    alert('إدارة مخزون المخزن #' + warehouseId);
+}
+
+function activateWarehouse(warehouseId) {
+    if (confirm('هل تريد تفعيل هذا المخزن؟')) {
+        alert('تم تفعيل المخزن #' + warehouseId);
+    }
+}
+
+function deactivateWarehouse(warehouseId) {
+    if (confirm('هل تريد إلغاء تفعيل هذا المخزن؟')) {
+        alert('تم إلغاء تفعيل المخزن #' + warehouseId);
+    }
+}
+</script>
+{% endblock %}

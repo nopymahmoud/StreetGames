@@ -1,0 +1,305 @@
+{% extends 'base.html' %}
+
+{% block title %}كشوف حسابات الشركاء - Street Games V2{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Elegant translucent panels inside colored stat cards */
+.card.bg-success .card-body,
+.card.bg-danger .card-body,
+.card.bg-info .card-body { position: relative; }
+
+.card.bg-success .card-body::before {
+    content: "";
+    position: absolute;
+    inset: 10px;
+    border-radius: 12px;
+    background: rgba(var(--bs-success-rgb), 0.18);
+}
+.card.bg-danger .card-body::before {
+    content: "";
+    position: absolute;
+    inset: 10px;
+    border-radius: 12px;
+    background: rgba(var(--bs-danger-rgb), 0.18);
+}
+.card.bg-info .card-body::before {
+    content: "";
+    position: absolute;
+    inset: 10px;
+    border-radius: 12px;
+    background: rgba(var(--bs-info-rgb), 0.18);
+}
+
+/* keep content above the translucent panel */
+.card.bg-success .card-body > *,
+.card.bg-danger .card-body > *,
+.card.bg-info .card-body > * { position: relative; z-index: 1; }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-0">
+            <i class="bi bi-file-text text-info"></i>
+            كشوف حسابات الشركاء
+        </h1>
+        <p class="text-muted">تفاصيل حركات حسابات الشركاء</p>
+    </div>
+</div>
+
+<!-- Currency Balances -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-currency-exchange"></i> الأرصدة حسب العملة
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if currency_totals %}
+                    <div class="row">
+                        {% for currency_total in currency_totals %}
+                            <div class="col-lg-3 col-md-6 mb-3">
+                                <div class="card border-primary">
+                                    <div class="card-body text-center">
+                                        <h3 class="text-primary">{{ currency_total.currency }}</h3>
+                                        <div class="row">
+                                            <div class="col-4">
+                                                <small class="text-muted">مدين</small>
+                                                <div class="text-success fw-bold">{{ currency_total.total_debit|money }}</div>
+                                            </div>
+                                            <div class="col-4">
+                                                <small class="text-muted">دائن</small>
+                                                <div class="text-danger fw-bold">{{ currency_total.total_credit|money }}</div>
+                                            </div>
+                                            <div class="col-4">
+                                                <small class="text-muted">الصافي</small>
+                                                <div class="text-primary fw-bold">{{ currency_total.net_balance|money }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">لا توجد حركات مالية</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards (per currency) -->
+<div class="row mb-4">
+    <!-- Debit by currency -->
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div class="w-100 pe-3">
+                        <h6 class="mb-2 text-white">إجمالي المدين حسب العملة</h6>
+                        {% for ct in currency_totals %}
+                            <div class="d-flex justify-content-between small">
+                                <span class="text-white">{{ ct.currency }}</span>
+                                <span class="fw-bold text-white">{{ ct.total_debit|money:0 }}</span>
+                            </div>
+                        {% empty %}
+                            <div class="small text-white-50">لا توجد حركات</div>
+                        {% endfor %}
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-arrow-up fs-1 text-white"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Credit by currency -->
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div class="w-100 pe-3">
+                        <h6 class="mb-2 text-white">إجمالي الدائن حسب العملة</h6>
+                        {% for ct in currency_totals %}
+                            <div class="d-flex justify-content-between small">
+                                <span class="text-white">{{ ct.currency }}</span>
+                                <span class="fw-bold text-white">{{ ct.total_credit|money:0 }}</span>
+                            </div>
+                        {% empty %}
+                            <div class="small text-white-50">لا توجد حركات</div>
+                        {% endfor %}
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-arrow-down fs-1 text-white"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transactions count (overall) -->
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_count|num:0 }}</h4>
+                        <p class="card-text">عدد الحركات</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-list-ol fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-funnel"></i> تصفية النتائج
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">الشراكة</label>
+                {{ filter_form.partnership }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">نوع الحركة</label>
+                {{ filter_form.transaction_type }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">من تاريخ</label>
+                {{ filter_form.date_from }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">إلى تاريخ</label>
+                {{ filter_form.date_to }}
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Accounts Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-table"></i> كشف الحساب
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>الشريك</th>
+                            <th>نوع الحركة</th>
+                            <th>الوصف</th>
+                            <th>العملة</th>
+                            <th class="text-end">مدين</th>
+                            <th class="text-end">دائن</th>
+                            <th class="text-end">الرصيد</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for account in page_obj %}
+                            <tr>
+                                <td>{{ account.transaction_date }}</td>
+                                <td>
+                                    <strong>{{ account.partnership.partner_name }}</strong>
+                                    <br><small class="text-muted">{{ account.partnership.zone.name }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge
+                                        {% if account.transaction_type == 'revenue_share' %}bg-success
+                                        {% elif account.transaction_type == 'expense_share' %}bg-warning
+                                        {% elif account.transaction_type == 'payment' %}bg-primary
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ account.get_transaction_type_display }}
+                                    </span>
+                                </td>
+                                <td>{{ account.description }}</td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ account.currency }}</span>
+                                </td>
+                                <td class="text-end">
+                                    {% if account.debit %}
+                                        <strong class="text-success">{{ account.debit|money }}</strong>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if account.credit %}
+                                        <strong class="text-danger">{{ account.credit|money }}</strong>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <strong>{{ account.balance|money }} {{ account.currency }}</strong>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="تصفح الصفحات">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">الأولى</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">السابقة</a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">التالية</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">الأخيرة</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-file-text display-1 text-muted"></i>
+                <h4 class="text-muted mt-3">لا توجد حركات</h4>
+                <p class="text-muted">لم يتم العثور على أي حركات تطابق معايير البحث</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

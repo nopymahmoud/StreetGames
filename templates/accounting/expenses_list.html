@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}المصروفات - Street Games V2{% endblock %}
+
+{% block extra_css %}
+<style>
+.exp-bg-1{background-color:#0d6efd!important;color:#fff!important;}
+.exp-bg-2{background-color:#198754!important;color:#fff!important;}
+.exp-bg-3{background-color:#ffc107!important;color:#fff!important;}
+.exp-bg-4{background-color:#0dcaf0!important;color:#fff!important;}
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-credit-card text-danger"></i>
+                    المصروفات
+                </h1>
+                <p class="text-muted">إدارة مصروفات مناطق الألعاب</p>
+            </div>
+            <div>
+                {% if can_access_accounting %}
+                    <a href="{% url 'accounting:expense_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> إضافة مصروف جديد
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Currency Cards (4 currencies) -->
+<div class="row mb-4">
+    {% for c in currency_totals %}
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card shadow-sm border-0 {% if forloop.counter0 == 0 %}exp-bg-1{% elif forloop.counter0 == 1 %}exp-bg-2{% elif forloop.counter0 == 2 %}exp-bg-3{% else %}exp-bg-4{% endif %}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge border border-light text-white bg-transparent">{{ c.currency }}</span>
+                            <h4 class="card-title mt-2 mb-0 text-white">{{ c.total_amount|money }}</h4>
+                            <small class="text-white">إجمالي مصروفات {{ c.currency }}</small>
+                        </div>
+                        <i class="bi bi-cash-stack fs-1 text-white"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-12">
+            <div class="alert alert-light border">لا توجد بيانات مصروفات لعرضها</div>
+        </div>
+    {% endfor %}
+</div>
+
+
+
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-funnel"></i> تصفية النتائج
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-2">
+                {{ filter_form.zone.label_tag }}
+                {{ filter_form.zone }}
+            </div>
+            <div class="col-md-2">
+                {{ filter_form.category.label_tag }}
+                {{ filter_form.category }}
+            </div>
+            <div class="col-md-2">
+                {{ filter_form.date_from.label_tag }}
+                {{ filter_form.date_from }}
+            </div>
+            <div class="col-md-2">
+                {{ filter_form.date_to.label_tag }}
+                {{ filter_form.date_to }}
+            </div>
+            <div class="col-md-2">
+                {{ filter_form.currency.label_tag }}
+                {{ filter_form.currency }}
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-search"></i> بحث
+                </button>
+                <a href="{% url 'accounting:expenses_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-clockwise"></i> إعادة تعيين
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Expenses Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-table"></i> قائمة المصروفات
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>المنطقة</th>
+                            <th>الفئة</th>
+                            <th>الوصف</th>
+                            <th>المبلغ</th>
+                            <th>العملة</th>
+                            <th>تحميل الشركاء</th>
+                            <th>المورد</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for expense in page_obj %}
+                            <tr>
+                                <td>{{ expense.date }}</td>
+                                <td>
+                                    <span class="badge bg-primary">{{ expense.zone.code }}</span>
+                                    {{ expense.zone.name }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        {{ expense.get_category_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {{ expense.description|truncatechars:50 }}
+                                    {% if expense.receipt_number %}
+                                        <br><small class="text-muted">إيصال: {{ expense.receipt_number }}</small>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end fw-bold text-danger">
+                                    {{ expense.amount|money }}
+                                </td>
+                                <td>{{ expense.currency }}</td>
+                                <td>
+                                    {% if expense.charge_partners %}
+                                        {% if expense.partner_shares_calculated %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle"></i> تم التوزيع
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning">
+                                                <i class="bi bi-clock"></i> لم يتم
+                                            </span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-x-circle"></i> لا يحمل
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ expense.supplier|default:"-" }}</td>
+                                <td>
+                                    {% if can_access_accounting %}
+                                        <a href="{% url 'accounting:expense_edit' expense.pk %}"
+                                           class="btn btn-sm btn-outline-primary" title="تعديل">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="تصفح الصفحات">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">الأولى</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">السابقة</a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">التالية</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">الأخيرة</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox display-1 text-muted"></i>
+                <h4 class="text-muted mt-3">لا توجد مصروفات</h4>
+                <p class="text-muted">لم يتم العثور على أي مصروفات تطابق معايير البحث</p>
+                {% if can_access_accounting %}
+                    <a href="{% url 'accounting:expense_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> إضافة أول مصروف
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

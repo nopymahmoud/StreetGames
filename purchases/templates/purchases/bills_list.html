@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>فواتير المشتريات</h3>
+    <a href="{% url 'purchases:bill_create' %}" class="btn btn-primary">فاتورة جديدة</a>
+  </div>
+  <table class="table table-striped">
+    <thead><tr><th>رقم</th><th>المورد</th><th>التاريخ</th><th>الإجمالي</th><th></th></tr></thead>
+    <tbody>
+      {% for b in bills %}
+      <tr>
+        <td>{{ b.bill_number }}</td>
+        <td>{{ b.supplier.name }}</td>
+        <td>{{ b.bill_date }}</td>
+        <td>{{ b.total }}</td>
+        <td>
+          <a class="btn btn-sm btn-secondary" href="{% url 'purchases:bill_edit' b.id %}">تعديل</a>
+          <a class="btn btn-sm btn-danger" href="{% url 'purchases:bill_delete' b.id %}">حذف</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center">لا توجد بيانات</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>الموردون</h3>
+    <a href="{% url 'purchases:supplier_create' %}" class="btn btn-primary">إضافة مورد</a>
+  </div>
+  <table class="table table-striped">
+    <thead><tr><th>الكود</th><th>الاسم</th><th>الهاتف</th><th></th></tr></thead>
+    <tbody>
+      {% for s in suppliers %}
+      <tr>
+        <td>{{ s.code }}</td>
+        <td><a href="{% url 'purchases:supplier_ledger' s.id %}">{{ s.name }}</a></td>
+        <td>{{ s.phone }}</td>
+        <td>
+          <a class="btn btn-sm btn-success" href="{% url 'purchases:supplier_payment' s.id %}">سداد</a>
+          <a class="btn btn-sm btn-secondary" href="{% url 'purchases:supplier_edit' s.id %}">تعديل</a>
+          <a class="btn btn-sm btn-danger" href="{% url 'purchases:supplier_delete' s.id %}">حذف</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-center">لا توجد بيانات</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h3>كشف حساب المورد: {{ supplier.name }}</h3>
+  <table class="table table-bordered">
+    <thead><tr><th>التاريخ</th><th>الوصف</th><th>مدين</th><th>دائن</th><th>الرصيد التراكمي (دائن على الشركة)</th></tr></thead>
+    <tbody>
+      {% for entry, bal in entries %}
+        <tr>
+          <td>{{ entry.trans_date }}</td>
+          <td>{{ entry.description }}</td>
+          <td>{{ entry.debit }}</td>
+          <td>{{ entry.credit }}</td>
+          <td>{{ bal }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="text-center">لا توجد حركات</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+

@@ -1,0 +1,548 @@
+{% extends 'base.html' %}
+
+{% block title %}لوحة التحكم - Street Games V2{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Green stat cards with white text */
+    .stat-card-green { background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: .75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+    .stat-card-green .card-body { padding: 1rem 1.25rem; }
+    .stat-icon { font-size: 1.25rem; opacity: .9; }
+    .currency-chip-green { background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: .5rem; padding: .4rem .6rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: .3rem; }
+    .currency-chip-green .currency-label { background: rgba(255, 255, 255, 0.9); color: #059669; font-weight: 600; font-size: .75rem; padding: .2rem .4rem; border-radius: .25rem; }
+    .currency-chip-green .amount { color: white; font-weight: 700; font-size: .9rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-end">
+    <div class="col-12 col-lg-8">
+        <h1 class="h3 mb-0">
+            <i class="bi bi-speedometer2 text-primary"></i>
+            لوحة التحكم
+        </h1>
+        <p class="text-muted mb-0">نظرة عامة على أداء مناطق الألعاب</p>
+    </div>
+    <div class="col-12 col-lg-4 mt-3 mt-lg-0">
+        <form method="get" class="d-flex gap-2 justify-content-lg-end">
+            <label class="form-label mb-0 align-self-center">شهر التقرير</label>
+            <input type="month" name="month" class="form-control" value="{{ selected_month_str }}" onchange="this.form.submit()">
+        </form>
+    </div>
+</div>
+
+<!-- Multi-Currency Statistics Cards -->
+<div class="row mb-4" x-data="dashboardStats">
+    <!-- الإيرادات الشهرية حسب العملة -->
+    <div class="col-lg-6 col-md-12 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-cash-coin"></i> الإيرادات الشهرية
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if monthly_revenue_by_currency %}
+                    {% for revenue in monthly_revenue_by_currency %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold">{{ revenue.currency }}</span>
+                            <span class="fs-5">{{ revenue.total|money }}</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="mb-0">لا توجد إيرادات هذا الشهر</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- المصروفات الشهرية حسب العملة -->
+    <div class="col-lg-6 col-md-12 mb-3">
+        <div class="card bg-danger text-white">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-credit-card"></i> المصروفات الشهرية
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if monthly_expenses_by_currency %}
+                    {% for expense in monthly_expenses_by_currency %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold">{{ expense.currency }}</span>
+                            <span class="fs-5">{{ expense.total|floatformat:2 }}</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="mb-0">لا توجد مصروفات هذا الشهر</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" x-text="stats.total_zones">{{ total_zones }}</h4>
+                        <p class="card-text">مناطق الألعاب المتاحة</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-building fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" x-text="stats.total_partnerships">{{ total_partnerships }}</h4>
+                        <p class="card-text">الشراكات النشطة</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-people fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Zones + Quick Actions Row (replaces duplicated cards) -->
+<div class="row mb-4">
+    <!-- Top 5 Zones by Revenue (this month) -->
+    <div class="col-lg-6 col-md-12 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-trophy text-warning"></i>
+                    أعلى 5 مناطق من حيث الإيراد (هذا الشهر)
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group" id="topZonesList">
+                    <li class="list-group-item text-center text-muted">جاري التحميل...</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- تمت إزالة كرت الإجراءات السريعة حسب الطلب -->
+</div>
+
+<!-- Additional Stats Row -->
+<div class="row mb-4" x-data="dashboardStats">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card stat-card-green">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div class="w-100">
+                        <p class="card-text mb-2">صافي الربح (شهر)</p>
+                        <template x-if="(stats.monthly_profit_by_currency||[]).length > 0">
+                            <div class="row g-2">
+                                <template x-for="item in stats.monthly_profit_by_currency" :key="item.currency">
+                                    <div class="col-6">
+                                        <div class="currency-chip-green">
+                                            <span class="currency-label" x-text="item.currency"></span>
+                                            <span class="amount" x-text="formatAmountEn(item.amount)"></span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                        <template x-if="!(stats.monthly_profit_by_currency||[]).length">
+                            <h4 class="card-title" x-text="formatCurrency(stats.monthly_profit)">0</h4>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card stat-card-green">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div class="w-100">
+                        <p class="card-text mb-2">رصيد الخزينة</p>
+                        <template x-if="(stats.treasury_by_currency||[]).length > 0">
+                            <div class="row g-2">
+                                <template x-for="item in stats.treasury_by_currency" :key="item.currency">
+                                    <div class="col-6">
+                                        <div class="currency-chip-green">
+                                            <span class="currency-label" x-text="item.currency"></span>
+                                            <span class="amount" x-text="formatAmountEn(item.amount)"></span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                        <template x-if="!(stats.treasury_by_currency||[]).length">
+                            <h4 class="card-title" x-text="formatCurrency(stats.treasury_balance)">0</h4>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" x-text="formatCurrency(stats.bank_balance)">0</h4>
+                        <p class="card-text">رصيد البنوك</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-bank fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-light text-dark">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" x-text="stats.total_hotels">0</h4>
+                        <p class="card-text">إجمالي الفنادق</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-buildings fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-lg-8 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-bar-chart text-primary"></i>
+                    الإيرادات والمصروفات الشهرية
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="revenueExpenseChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-pie-chart text-primary"></i>
+                    توزيع الإيرادات حسب المنطقة
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="zoneRevenueChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities -->
+<div class="row">
+    <div class="col-lg-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-clock-history text-primary"></i>
+                    آخر الإيرادات
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>المنطقة</th>
+                                <th>المبلغ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentActivitiesTable">
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">جاري التحميل...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- تمت إزالة كرت التنبيهات حسب الطلب -->
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Alpine.js Dashboard Stats
+document.addEventListener('alpine:init', () => {
+    Alpine.data('dashboardStats', () => ({
+        stats: {
+            monthly_revenue: 0,
+            monthly_expenses: 0,
+            monthly_profit: 0,
+            total_zones: 0,
+            total_partnerships: 0,
+            treasury_balance: 0,
+            bank_balance: 0,
+            total_hotels: 0
+        },
+        loading: true,
+
+        init() {
+            this.loadStats();
+        },
+
+        async loadStats() {
+            try {
+                const response = await fetch('/api/dashboard-stats/');
+                const result = await response.json();
+
+                if (result.success) {
+                    this.stats = result.data;
+                } else {
+                    console.error('Error loading stats:', result.error);
+                }
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        formatCurrency(amount) {
+            if (this.loading) return 'جاري التحميل...';
+            const n = Number(amount || 0);
+            return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+        },
+        formatAmountEn(amount) {
+            const n = Number(amount || 0);
+            return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+        }
+    }));
+});
+
+// Chart.js Charts
+document.addEventListener('DOMContentLoaded', function() {
+    loadRevenueExpenseChart();
+    loadZoneRevenueChart();
+    loadTopZonesList();
+    loadRecentActivities();
+});
+
+async function loadRevenueExpenseChart() {
+    try {
+        const response = await fetch('/api/revenue-chart/');
+        const result = await response.json();
+
+        if (result.success) {
+            const data = result.data;
+            const labels = data.map(item => item.month_name);
+            const revenues = data.map(item => item.revenue);
+            const expenses = data.map(item => item.expenses);
+
+            const revenueExpenseCtx = document.getElementById('revenueExpenseChart').getContext('2d');
+            new Chart(revenueExpenseCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'الإيرادات',
+                        data: revenues,
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'المصروفات',
+                        data: expenses,
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' +
+                                           new Intl.NumberFormat('en-US').format(context.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return new Intl.NumberFormat('en-US').format(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error loading revenue chart:', error);
+    }
+}
+
+async function loadZoneRevenueChart() {
+    try {
+        const response = await fetch('/api/zone-revenue-distribution/');
+        const result = await response.json();
+
+        if (result.success && result.data.length > 0) {
+            const data = result.data;
+            const labels = data.map(item => item.zone_name);
+            const revenues = data.map(item => item.revenue);
+
+            // ألوان متنوعة للمناطق
+            const colors = [
+                '#0d6efd', '#198754', '#ffc107', '#dc3545',
+                '#6f42c1', '#fd7e14', '#20c997', '#e83e8c'
+            ];
+
+            const zoneRevenueCtx = document.getElementById('zoneRevenueChart').getContext('2d');
+            new Chart(zoneRevenueCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: revenues,
+                        backgroundColor: colors.slice(0, data.length)
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return context.label + ': ' +
+                                           new Intl.NumberFormat('en-US').format(context.parsed) +
+                                           ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            // عرض رسالة عدم وجود بيانات
+            const zoneRevenueCtx = document.getElementById('zoneRevenueChart').getContext('2d');
+            zoneRevenueCtx.font = '16px Arial';
+            zoneRevenueCtx.textAlign = 'center';
+            zoneRevenueCtx.fillText('لا توجد بيانات للعرض',
+                                   zoneRevenueCtx.canvas.width / 2,
+                                   zoneRevenueCtx.canvas.height / 2);
+        }
+    } catch (error) {
+        console.error('Error loading zone revenue chart:', error);
+    }
+}
+
+async function loadRecentActivities() {
+    try {
+        const response = await fetch('/api/recent-activities/');
+        const result = await response.json();
+
+        const tableBody = document.getElementById('recentActivitiesTable');
+
+        if (result.success && result.data.length > 0) {
+            const activities = result.data.slice(0, 5); // أحدث 5 أنشطة
+
+            tableBody.innerHTML = activities.map(activity => {
+                const typeIcon = activity.type === 'revenue' ?
+                    '<i class="bi bi-arrow-up-circle text-success"></i>' :
+                    '<i class="bi bi-arrow-down-circle text-danger"></i>';
+
+                const formattedAmount = new Intl.NumberFormat('en-US').format(activity.amount) + ' ' + activity.currency;
+
+                return `
+                    <tr>
+                        <td>${activity.date}</td>
+                        <td>${typeIcon} ${activity.description}</td>
+                        <td class="text-end">${formattedAmount}</td>
+                    </tr>
+                `;
+            }).join('');
+        } else {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="text-center text-muted">لا توجد أنشطة حديثة</td>
+                </tr>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading recent activities:', error);
+        document.getElementById('recentActivitiesTable').innerHTML = `
+            <tr>
+                <td colspan="3" class="text-center text-danger">خطأ في تحميل البيانات</td>
+            </tr>
+        `;
+    }
+}
+
+async function loadTopZonesList() {
+    try {
+        const response = await fetch('/api/zone-revenue-distribution/');
+        const result = await response.json();
+        const list = document.getElementById('topZonesList');
+        if (result.success && result.data.length > 0) {
+            list.innerHTML = result.data.map((z, idx) => {
+                const chips = (z.revenues||[]).map(rv => `
+                    <span class="badge rounded-pill bg-success-subtle text-success border border-success me-1">
+                        ${new Intl.NumberFormat('en-US').format(rv.amount)} ${rv.currency}
+                    </span>`).join('');
+                return `
+                <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap">
+                    <span class="mb-2 mb-sm-0">
+                        <span class="badge bg-warning text-dark me-2">#${idx + 1}</span>
+                        ${z.zone_name}
+                    </span>
+                    <span class="d-flex flex-wrap">${chips}</span>
+                </li>`;
+            }).join('');
+        } else {
+            list.innerHTML = '<li class="list-group-item text-center text-muted">لا توجد بيانات</li>';
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+</script>
+{% endblock %}

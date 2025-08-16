@@ -1,0 +1,310 @@
+{% extends 'base.html' %}
+
+{% block title %}إدارة الألعاب - Street Games V2{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-controller text-primary"></i>
+                    إدارة الألعاب
+                </h1>
+                <p class="text-muted">إدارة وعرض جميع أنواع الألعاب في النظام</p>
+            </div>
+            <div>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGameModal">
+                    <i class="bi bi-plus-circle"></i> إضافة لعبة جديدة
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Games Statistics -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_games|num:0 }}</h4>
+                        <p class="card-text">إجمالي أنواع الألعاب</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-controller fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ active_games|num:0 }}</h4>
+                        <p class="card-text">الألعاب النشطة</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-check-circle fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ games_with_revenue|num:0 }}</h4>
+                        <p class="card-text">ألعاب بإيرادات</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-cash fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_revenue_today|money }}</h4>
+                        <p class="card-text">إيرادات اليوم</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-graph-up fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Games List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-list"></i> قائمة الألعاب
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if games %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>اسم اللعبة</th>
+                                    <th>النوع</th>
+                                    <th>السعر</th>
+                                    <th>الإيرادات الشهرية</th>
+                                    <th>عدد المرات</th>
+                                    <th>الحالة</th>
+                                    <th>تاريخ الإنشاء</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for game in games %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ game.name }}</strong>
+                                            {% if game.description %}
+                                                <br><small class="text-muted">{{ game.description|truncatechars:40 }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if game.game_type %}
+                                                <span class="badge bg-secondary">{{ game.game_type }}</span>
+                                            {% else %}
+                                                <span class="text-muted">غير محدد</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if game.price_per_play %}
+                                                <div class="small">
+                                                    {% for price in game.price_per_play %}
+                                                        <div>{{ price.currency }}: {{ price.amount|money }}</div>
+                                                    {% endfor %}
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted">غير محدد</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if game.monthly_revenue %}
+                                                <div class="small">
+                                                    {% for revenue in game.monthly_revenue %}
+                                                        <div class="text-success">{{ revenue.currency }}: {{ revenue.total|money }}</div>
+                                                    {% endfor %}
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted">لا توجد إيرادات</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ game.play_count|num:0 }}</span>
+                                        </td>
+                                        <td>
+                                            {% if game.active %}
+                                                <span class="badge bg-success">نشطة</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">غير نشطة</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ game.created_at|date:"Y-m-d" }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <button type="button" class="btn btn-outline-primary" 
+                                                        onclick="viewGame({{ game.id }})" title="عرض">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-warning" 
+                                                        onclick="editGame({{ game.id }})" title="تعديل">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-info" 
+                                                        onclick="viewStats({{ game.id }})" title="الإحصائيات">
+                                                    <i class="bi bi-graph-up"></i>
+                                                </button>
+                                                {% if game.active %}
+                                                    <button type="button" class="btn btn-outline-danger" 
+                                                            onclick="deactivateGame({{ game.id }})" title="إلغاء تفعيل">
+                                                        <i class="bi bi-x-circle"></i>
+                                                    </button>
+                                                {% else %}
+                                                    <button type="button" class="btn btn-outline-success" 
+                                                            onclick="activateGame({{ game.id }})" title="تفعيل">
+                                                        <i class="bi bi-check-circle"></i>
+                                                    </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-controller text-muted" style="font-size: 4rem;"></i>
+                        <h4 class="text-muted mt-3">لا توجد ألعاب</h4>
+                        <p class="text-muted">ابدأ بإضافة لعبة جديدة</p>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGameModal">
+                            <i class="bi bi-plus-circle"></i> إضافة لعبة جديدة
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Game Modal -->
+<div class="modal fade" id="addGameModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle text-primary"></i>
+                    إضافة لعبة جديدة
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'core:game_create' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">اسم اللعبة *</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="game_type" class="form-label">نوع اللعبة</label>
+                            <select class="form-select" id="game_type" name="game_type">
+                                <option value="">اختر نوع اللعبة</option>
+                                {% for game_type in game_types %}
+                                    <option value="{{ game_type.id }}">{{ game_type.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="price_currency" class="form-label">العملة</label>
+                            <select class="form-select" id="price_currency" name="price_currency">
+                                {% for code, name in supported_currencies %}
+                                    <option value="{{ code }}">{{ name }} ({{ code }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="price_amount" class="form-label">سعر اللعبة</label>
+                            <input type="number" class="form-control" id="price_amount" name="price_amount" step="0.01" min="0">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">الوصف</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="active" name="active" checked>
+                        <label class="form-check-label" for="active">
+                            لعبة نشطة
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check"></i> إضافة اللعبة
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewGame(gameId) {
+    // TODO: Implement view game functionality
+    alert('عرض تفاصيل اللعبة #' + gameId);
+}
+
+function editGame(gameId) {
+    // TODO: Implement edit game functionality
+    alert('تعديل اللعبة #' + gameId);
+}
+
+function viewStats(gameId) {
+    // TODO: Implement view stats functionality
+    alert('عرض إحصائيات اللعبة #' + gameId);
+}
+
+function activateGame(gameId) {
+    if (confirm('هل تريد تفعيل هذه اللعبة؟')) {
+        // TODO: Implement activate game functionality
+        alert('تم تفعيل اللعبة #' + gameId);
+    }
+}
+
+function deactivateGame(gameId) {
+    if (confirm('هل تريد إلغاء تفعيل هذه اللعبة؟')) {
+        // TODO: Implement deactivate game functionality
+        alert('تم إلغاء تفعيل اللعبة #' + gameId);
+    }
+}
+</script>
+{% endblock %}

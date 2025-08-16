@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Street Games V2{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'partnerships:payments_list' %}">المدفوعات</a></li>
+                <li class="breadcrumb-item active">{{ title }}</li>
+            </ol>
+        </nav>
+        
+        <h1 class="h3 mb-0">
+            <i class="bi bi-cash text-success"></i>
+            {{ title }}
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-form-check"></i> بيانات الدفعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.partnership.id_for_label }}" class="form-label">الشراكة *</label>
+                        {{ form.partnership }}
+                        {% if form.partnership.errors %}
+                            <div class="text-danger small">{{ form.partnership.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.payment_date.id_for_label }}" class="form-label">تاريخ الدفع *</label>
+                            {{ form.payment_date }}
+                            {% if form.payment_date.errors %}
+                                <div class="text-danger small">{{ form.payment_date.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.payment_method.id_for_label }}" class="form-label">طريقة الدفع *</label>
+                            {{ form.payment_method }}
+                            {% if form.payment_method.errors %}
+                                <div class="text-danger small">{{ form.payment_method.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="{{ form.amount.id_for_label }}" class="form-label">المبلغ *</label>
+                            {{ form.amount }}
+                            {% if form.amount.errors %}
+                                <div class="text-danger small">{{ form.amount.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.currency.id_for_label }}" class="form-label">العملة</label>
+                            {{ form.currency }}
+                            {% if form.currency.errors %}
+                                <div class="text-danger small">{{ form.currency.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.reference_number.id_for_label }}" class="form-label">رقم المرجع</label>
+                            {{ form.reference_number }}
+                            {% if form.reference_number.errors %}
+                                <div class="text-danger small">{{ form.reference_number.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">ملاحظات</label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                            <div class="text-danger small">{{ form.notes.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> حفظ الدفعة
+                        </button>
+                        <a href="{% url 'partnerships:payments_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> إلغاء
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {% if payment %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i> معلومات إضافية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>تاريخ الإنشاء:</strong> {{ payment.created_at|date:"Y-m-d H:i" }}</p>
+                            <p><strong>أنشأ بواسطة:</strong> {{ payment.created_by.get_full_name|default:payment.created_by.username }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>الشريك:</strong> {{ payment.partnership.partner_name }}</p>
+                            <p><strong>المنطقة:</strong> {{ payment.partnership.zone.name }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

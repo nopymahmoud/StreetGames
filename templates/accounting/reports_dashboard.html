@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+
+{% block title %}التقارير المحاسبية - Street Games V2{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-0">
+            <i class="bi bi-file-earmark-text text-primary"></i>
+            التقارير المحاسبية
+        </h1>
+        <p class="text-muted">التقارير المالية والمحاسبية الشاملة</p>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">4</h4>
+                        <p class="card-text">التقارير المتاحة</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-file-earmark-bar-graph fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ accessible_zones.count|default:0 }}</h4>
+                        <p class="card-text">المناطق المتاحة</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-building fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ user_role_display }}</h4>
+                        <p class="card-text">مستوى الصلاحية</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-person-badge fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ preferred_currency }}</h4>
+                        <p class="card-text">العملة المفضلة</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-currency-exchange fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Financial Reports -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-graph-up"></i> التقارير المالية
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-6 col-md-6 mb-3">
+                        <div class="card border-primary">
+                            <div class="card-body text-center">
+                                <i class="bi bi-bar-chart display-4 text-primary mb-3"></i>
+                                <h5 class="card-title">الميزانية العمومية</h5>
+                                <p class="card-text text-muted">عرض الأصول والخصوم وحقوق الملكية</p>
+                                <a href="{% url 'accounting:balance_sheet' %}" class="btn btn-primary">
+                                    <i class="bi bi-eye"></i> عرض التقرير
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6 col-md-6 mb-3">
+                        <div class="card border-success">
+                            <div class="card-body text-center">
+                                <i class="bi bi-graph-down display-4 text-success mb-3"></i>
+                                <h5 class="card-title">قائمة الدخل</h5>
+                                <p class="card-text text-muted">الإيرادات والمصروفات وصافي الدخل</p>
+                                <a href="{% url 'accounting:income_statement' %}" class="btn btn-success">
+                                    <i class="bi bi-eye"></i> عرض التقرير
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Accounting Reports -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-calculator"></i> التقارير المحاسبية
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-6 col-md-6 mb-3">
+                        <div class="card border-info">
+                            <div class="card-body text-center">
+                                <i class="bi bi-list-check display-4 text-info mb-3"></i>
+                                <h5 class="card-title">ميزان المراجعة</h5>
+                                <p class="card-text text-muted">أرصدة جميع الحسابات المحاسبية</p>
+                                <a href="{% url 'accounting:trial_balance' %}" class="btn btn-info">
+                                    <i class="bi bi-eye"></i> عرض التقرير
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6 col-md-6 mb-3">
+                        <div class="card border-warning">
+                            <div class="card-body text-center">
+                                <i class="bi bi-people display-4 text-warning mb-3"></i>
+                                <h5 class="card-title">كشوف حسابات الشركاء</h5>
+                                <p class="card-text text-muted">تفاصيل حسابات وأرصدة الشركاء</p>
+                                <a href="{% url 'accounting:partner_statements' %}" class="btn btn-warning">
+                                    <i class="bi bi-eye"></i> عرض التقرير
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning"></i> إجراءات سريعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'accounting:revenues_list' %}" class="btn btn-outline-success w-100">
+                            <i class="bi bi-cash-coin"></i> الإيرادات
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'accounting:expenses_list' %}" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-credit-card"></i> المصروفات
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'partnerships:partner_accounts_list' %}" class="btn btn-outline-info w-100">
+                            <i class="bi bi-file-text"></i> كشوف الشركاء
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'core:dashboard' %}" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-house"></i> العودة للرئيسية
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Instructions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-info-circle"></i> إرشادات التقارير
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-check-circle text-success"></i> نصائح مهمة:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-arrow-right"></i> تأكد من إدخال جميع الإيرادات والمصروفات قبل إنشاء التقارير</li>
+                            <li><i class="bi bi-arrow-right"></i> يمكنك تصفية التقارير حسب التاريخ والمنطقة</li>
+                            <li><i class="bi bi-arrow-right"></i> التقارير تعكس البيانات المتاحة حسب صلاحياتك</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-exclamation-triangle text-warning"></i> ملاحظات:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-arrow-right"></i> الميزانية تعكس الوضع المالي في تاريخ محدد</li>
+                            <li><i class="bi bi-arrow-right"></i> قائمة الدخل تغطي فترة زمنية محددة</li>
+                            <li><i class="bi bi-arrow-right"></i> يمكن طباعة أو تصدير التقارير للمراجعة</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

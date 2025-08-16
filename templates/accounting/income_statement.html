@@ -1,0 +1,321 @@
+{% extends 'base.html' %}
+
+{% block title %}قائمة الدخل - Street Games V2{% endblock %}
+
+{% block extra_css %}
+<style>
+/***** Force white text for the KPI cards on Income Statement *****/
+.income-cards .card, .income-cards .card * { color: #fff !important; }
+.income-cards .badge { color:#fff !important; border-color:#fff !important; }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-0">
+            <i class="bi bi-graph-up text-success"></i>
+            قائمة الدخل
+        </h1>
+        <p class="text-muted">بيان الإيرادات والمصروفات والأرباح حسب العملة — مع خيار عرض بعملة تقديم</p>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">من تاريخ</label>
+        <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-control" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">إلى تاريخ</label>
+        <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-control" />
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">نمط العرض</label>
+        <select name="mode" class="form-select">
+          <option value="by_currency" {% if request.GET.mode == 'by_currency' or not request.GET.mode %}selected{% endif %}>كل عملة على حدة</option>
+          <option value="presentation" {% if request.GET.mode == 'presentation' %}selected{% endif %}>تحويل إلى عملة تقديم (EGP)</option>
+          <option value="multi" {% if request.GET.mode == 'multi' %}selected{% endif %}>أعمدة متعددة + إجمالي محوّل</option>
+        </select>
+      </div>
+      <div class="col-md-3 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary">تحديث</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<!-- Filter Form -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-funnel"></i> تصفية البيانات
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="start_date" class="form-label">من تاريخ</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date"
+                               value="{{ request.GET.start_date }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="end_date" class="form-label">إلى تاريخ</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date"
+                               value="{{ request.GET.end_date }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="currency" class="form-label">العملة</label>
+                        <select class="form-select" id="currency" name="currency">
+                            <option value="">جميع العملات</option>
+                            <option value="EGP" {% if request.GET.currency == 'EGP' %}selected{% endif %}>جنيه مصري</option>
+                            <option value="USD" {% if request.GET.currency == 'USD' %}selected{% endif %}>دولار أمريكي</option>
+                            <option value="EUR" {% if request.GET.currency == 'EUR' %}selected{% endif %}>يورو</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary d-block w-100">
+                            <i class="bi bi-search"></i> تصفية
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Income Statement by Currency -->
+{% if all_currencies %}
+    {% for currency in all_currencies %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-currency-exchange"></i>
+                            قائمة الدخل - {{ currency }}
+                            <span class="badge bg-light text-dark ms-2">
+                                {{ date_from|date:"Y-m-d" }} إلى {{ date_to|date:"Y-m-d" }}
+                            </span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <tbody>
+                                    <!-- الإيرادات -->
+                                    <tr class="table-success">
+                                        <td><strong>الإيرادات</strong></td>
+                                        <td class="text-end">
+                                            <strong>
+                                                {% for revenue in total_revenue_by_currency %}
+                                                    {% if revenue.currency == currency %}
+                                                        {{ revenue.total|money }} {{ currency }}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </strong>
+                                        </td>
+                                    </tr>
+                                    {% for revenue in revenues_by_currency %}
+                                        {% if revenue.currency == currency %}
+                                            <tr>
+                                                <td class="ps-4">{{ revenue.zone__name }}</td>
+                                                <td class="text-end">{{ revenue.total_amount|money }} {{ currency }}</td>
+                                            </tr>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    <!-- المصروفات -->
+                                    <tr class="table-danger">
+                                        <td><strong>المصروفات</strong></td>
+                                        <td class="text-end">
+                                            <strong>
+                                                {% for expense in total_expenses_by_currency %}
+                                                    {% if expense.currency == currency %}
+                                                        ({{ expense.total|money }}) {{ currency }}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </strong>
+                                        </td>
+                                    </tr>
+                                    {% for expense in expenses_by_currency %}
+                                        {% if expense.currency == currency %}
+                                            <tr>
+                                                <td class="ps-4">{{ expense.category }}</td>
+                                                <td class="text-end">({{ expense.total_amount|money }}) {{ currency }}</td>
+                                            </tr>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    <!-- صافي الدخل -->
+                                    <tr class="table-primary border-top border-3">
+                                        <td><strong>صافي الدخل</strong></td>
+                                        <td class="text-end">
+                                            <strong>
+                                                {% for curr, net_income in net_income_by_currency.items %}
+                                                    {% if curr == currency %}
+                                                        <span class="{% if net_income > 0 %}text-success{% elif net_income < 0 %}text-danger{% else %}text-muted{% endif %}">
+                                                            {{ net_income|money }} {{ currency }}
+                                                        </span>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </strong>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Summary Cards -->
+                        <div class="row mt-4 income-cards">
+                            <div class="col-md-4">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body text-center">
+                                        <h5>إجمالي الإيرادات</h5>
+                                        <h3>
+                                            {% for r in total_revenue_by_currency %}
+                                                {% if r.currency == currency %}
+                                                    {{ r.total|money }}
+                                                {% endif %}
+                                            {% endfor %}
+                                        </h3>
+                                        <small>{{ currency }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-danger text-white">
+                                    <div class="card-body text-center">
+                                        <h5>إجمالي المصروفات</h5>
+                                        <h3>
+                                            {% for e in total_expenses_by_currency %}
+                                                {% if e.currency == currency %}
+                                                    {{ e.total|money }}
+                                                {% endif %}
+                                            {% endfor %}
+                                        </h3>
+                                        <small>{{ currency }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                {% for curr, net in net_income_by_currency.items %}
+                                    {% if curr == currency %}
+                                        <div class="card {% if net > 0 %}bg-primary{% elif net < 0 %}bg-warning{% else %}bg-secondary{% endif %} text-white">
+                                            <div class="card-body text-center">
+                                                <h5>صافي الدخل</h5>
+                                                <h3>{{ net|money }}</h3>
+                                                <small>{{ currency }}</small>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-graph-up display-4 text-muted"></i>
+                    <h4 class="text-muted mt-3">لا توجد بيانات</h4>
+                    <p class="text-muted">لا توجد إيرادات أو مصروفات في الفترة المحددة</p>
+                    <a href="{% url 'accounting:revenue_create' %}" class="btn btn-success me-2">
+                        <i class="bi bi-plus-circle"></i> إضافة إيراد
+                    </a>
+                    <a href="{% url 'accounting:expense_create' %}" class="btn btn-danger">
+                        <i class="bi bi-plus-circle"></i> إضافة مصروف
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Export Options -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+
+<!-- Presentation mode summary (if selected) -->
+{% if mode == 'presentation' and converted_totals %}
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header bg-warning">
+        <h5 class="card-title mb-0"><i class="bi bi-currency-exchange"></i> قائمة الدخل بعملة التقديم ({{ presentation_currency }})</h5>
+      </div>
+      <div class="card-body">
+        <div class="row text-end">
+          <div class="col-md-4">
+            <div class="p-3 border rounded bg-light">الإيرادات: <strong>{{ converted_totals.revenue|floatformat:2 }}</strong></div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 border rounded bg-light">المصروفات: <strong class="text-danger">{{ converted_totals.expenses|floatformat:2 }}</strong></div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 border rounded bg-light">صافي الدخل: <strong class="{% if converted_totals.revenue|floatformat:2 < converted_totals.expenses|floatformat:2 %}text-danger{% else %}text-success{% endif %}">{{ converted_totals.revenue|floatformat:2|add:"-"|add:converted_totals.expenses|floatformat:2 }}</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-download"></i> تصدير التقرير
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <button class="btn btn-outline-success w-100" onclick="window.print()">
+                            <i class="bi bi-printer"></i> طباعة
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="?{{ request.GET.urlencode }}&export=excel" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-file-earmark-excel"></i> تصدير Excel
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="?{{ request.GET.urlencode }}&export=pdf" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-file-earmark-pdf"></i> تصدير PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notes -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h6><i class="bi bi-info-circle"></i> ملاحظات:</h6>
+            <ul class="mb-0">
+                <li>قائمة الدخل تعرض الإيرادات والمصروفات لكل عملة منفصلة</li>
+                <li>صافي الدخل = الإيرادات - المصروفات</li>
+                <li>يمكن تصفية البيانات حسب التاريخ والعملة</li>
+                <li>الأرقام الموجبة تعني ربح، والسالبة تعني خسارة</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

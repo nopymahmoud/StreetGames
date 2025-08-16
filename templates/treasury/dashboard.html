@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+
+{% block title %}الخزينة والبنوك - Street Games V2{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-0">
+            <i class="bi bi-safe text-primary"></i>
+            الخزينة والبنوك
+        </h1>
+        <p class="text-muted">إدارة الخزائن والحسابات البنكية حسب العملة</p>
+    </div>
+</div>
+
+<!-- Treasury Balances by Currency -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-cash-stack"></i> أرصدة الخزائن حسب العملة
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if treasuries %}
+                    <div class="row">
+                        {% for treasury in treasuries %}
+                            <div class="col-lg-4 col-md-6 mb-3">
+                                <div class="card border-primary">
+                                    <div class="card-body text-center">
+                                        <h2 class="text-primary">{{ treasury.currency }}</h2>
+                                        <h3 class="text-success">{{ treasury.balance|money }}</h3>
+                                        <p class="text-muted mb-0">خزينة {{ treasury.get_currency_display }}</p>
+                                        <small class="text-muted">
+                                            آخر تحديث: {{ treasury.updated_at|date:"Y-m-d H:i" }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-safe display-4 text-muted"></i>
+                        <h4 class="text-muted mt-3">لا توجد خزائن</h4>
+                        <p class="text-muted">سيتم إنشاء الخزائن تلقائياً عند أول معاملة</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bank Balances by Currency -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-bank"></i> أرصدة البنوك حسب العملة
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if bank_balances %}
+                    <div class="row">
+                        {% for balance in bank_balances %}
+                            <div class="col-lg-4 col-md-6 mb-3">
+                                <div class="card border-success">
+                                    <div class="card-body text-center">
+                                        <h2 class="text-success">{{ balance.currency }}</h2>
+                                        <h3 class="text-primary">{{ balance.total_balance|money }}</h3>
+                                        <p class="text-muted mb-0">إجمالي الأرصدة البنكية</p>
+                                        <small class="text-muted">
+                                            {{ balance.account_count|num:0 }} حساب بنكي
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-bank display-4 text-muted"></i>
+                        <h4 class="text-muted mt-3">لا توجد حسابات بنكية</h4>
+                        <p class="text-muted">يمكنك إضافة حسابات بنكية من لوحة الإدارة</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Transactions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-clock-history"></i> آخر المعاملات
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>التاريخ</th>
+                                    <th>النوع</th>
+                                    <th>الحساب</th>
+                                    <th>العملة</th>
+                                    <th class="text-end">المبلغ</th>
+                                    <th>الوصف</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in recent_transactions %}
+                                    <tr>
+                                        <td>{{ transaction.transaction_date }}</td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if transaction.transaction_type == 'deposit' %}bg-success
+                                                {% elif transaction.transaction_type == 'withdrawal' %}bg-danger
+                                                {% elif transaction.transaction_type == 'transfer' %}bg-info
+                                                {% else %}bg-secondary{% endif %}">
+                                                {{ transaction.get_transaction_type_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if transaction.treasury %}
+                                                <i class="bi bi-safe"></i> خزينة {{ transaction.treasury.currency }}
+                                            {% elif transaction.bank_account %}
+                                                <i class="bi bi-bank"></i> {{ transaction.bank_account.bank_name }}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">
+                                                {% if transaction.treasury %}
+                                                    {{ transaction.treasury.currency }}
+                                                {% elif transaction.bank_account %}
+                                                    {{ transaction.bank_account.currency }}
+                                                {% endif %}
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            <strong class="
+                                                {% if transaction.transaction_type == 'expense' or transaction.transaction_type == 'exchange_out' or transaction.transaction_type == 'revenue_reversal' %}text-danger
+                                                {% elif transaction.transaction_type == 'revenue' or transaction.transaction_type == 'partner_payment' or transaction.transaction_type == 'bank_withdrawal' or transaction.transaction_type == 'exchange_in' or transaction.transaction_type == 'expense_reversal' %}text-success
+                                                {% else %}text-primary{% endif %}">
+                                                {{ transaction.amount|money }}
+                                            </strong>
+                                        </td>
+                                        <td>{{ transaction.description|truncatechars:50 }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-clock-history display-4 text-muted"></i>
+                        <h4 class="text-muted mt-3">لا توجد معاملات</h4>
+                        <p class="text-muted">ستظهر المعاملات هنا عند إجرائها</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning"></i> إجراءات سريعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- أزيل زر إيراد جديد حسب الطلب -->
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'partnerships:payment_create' %}" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-cash"></i> دفعة شريك
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'admin:treasury_bankaccount_changelist' %}" class="btn btn-outline-info w-100">
+                            <i class="bi bi-bank"></i> إدارة البنوك
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'accounting:reports_dashboard' %}" class="btn btn-outline-warning w-100">
+                            <i class="bi bi-file-earmark-text"></i> التقارير
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Currency Exchange Rates Info -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h6><i class="bi bi-info-circle"></i> معلومات مهمة:</h6>
+            <ul class="mb-0">
+                <li>كل عملة لها خزينة منفصلة ومستقلة</li>
+                <li>لا يتم تحويل العملات تلقائياً - كل عملة تُحفظ بقيمتها الأصلية</li>
+                <li>أرصدة الشركاء تُحسب لكل عملة على حدة</li>
+                <li>يمكن إجراء تحويلات بين الخزائن والبنوك لنفس العملة</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

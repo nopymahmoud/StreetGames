@@ -1,0 +1,328 @@
+{% extends 'base.html' %}
+
+{% block title %}الميزانية العمومية - Street Games V2{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'accounting:reports_dashboard' %}">التقارير</a></li>
+                <li class="breadcrumb-item active">الميزانية العمومية</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-bar-chart text-primary"></i>
+                    الميزانية العمومية
+                </h1>
+                <p class="text-muted">كما في {{ report_date|date:"Y-m-d" }}</p>
+            </div>
+            <div>
+                <form method="get" class="d-flex gap-2">
+                    <input type="date" name="date" value="{{ report_date|date:'Y-m-d' }}" class="form-control">
+                    <button type="submit" class="btn btn-primary">تحديث</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Balance Check Alert -->
+{% if balance_check != 0 %}
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i>
+        <strong>تحذير:</strong> الميزانية غير متوازنة. الفرق: {{ balance_check|money }}
+        <br><small>يجب أن يكون مجموع الأصول = مجموع الخصوم + حقوق الملكية + صافي الدخل</small>
+    </div>
+{% else %}
+    <div class="alert alert-success">
+        <i class="bi bi-check-circle"></i>
+        <strong>ممتاز:</strong> الميزانية متوازنة
+    </div>
+{% endif %}
+
+<div class="row">
+    <!-- Assets -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-building"></i> الأصول
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if assets %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>رقم الحساب</th>
+                                    <th>اسم الحساب</th>
+                                    <th class="text-end">الرصيد</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for asset in assets %}
+                                    <tr>
+                                        <td><code>{{ asset.account_code }}</code></td>
+                                        <td>{{ asset.account_name }}</td>
+                                        <td class="text-end">{{ asset.computed_balance|money }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-dark">
+                                <tr>
+                                    <th colspan="2">إجمالي الأصول</th>
+                                    <th class="text-end">{{ total_assets|money }}</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-inbox display-4 text-muted"></i>
+                        <p class="text-muted mt-2">لا توجد حسابات أصول</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Liabilities and Equity -->
+    <div class="col-lg-6 mb-4">
+        <!-- Liabilities -->
+        <div class="card mb-3">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-credit-card"></i> الخصوم
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if liabilities %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>رقم الحساب</th>
+                                    <th>اسم الحساب</th>
+                                    <th class="text-end">الرصيد</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for liability in liabilities %}
+                                    <tr>
+                                        <td><code>{{ liability.account_code }}</code></td>
+                                        <td>{{ liability.account_name }}</td>
+                                        <td class="text-end">{{ liability.computed_balance|money }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-dark">
+                                <tr>
+                                    <th colspan="2">إجمالي الخصوم</th>
+                                    <th class="text-end">{{ total_liabilities|money }}</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="bi bi-inbox text-muted"></i>
+                        <p class="text-muted mb-0">لا توجد خصوم</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Equity -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-pie-chart"></i> حقوق الملكية
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if equity %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>رقم الحساب</th>
+                                    <th>اسم الحساب</th>
+                                    <th class="text-end">الرصيد</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for equity_account in equity %}
+                                    <tr>
+                                        <td><code>{{ equity_account.account_code }}</code></td>
+                                        <td>{{ equity_account.account_name }}</td>
+                                        <td class="text-end">{{ equity_account.computed_balance|money }}</td>
+                                    </tr>
+                                {% endfor %}
+                                <!-- Net Income -->
+                                <tr class="table-info">
+                                    <td><code>-</code></td>
+                                    <td><strong>صافي الدخل (الشهر الحالي)</strong></td>
+                                    <td class="text-end"><strong>متعدد العملات</strong></td>
+                                </tr>
+                            </tbody>
+                            <tfoot class="table-dark">
+                                <tr>
+                                    <th colspan="2">إجمالي حقوق الملكية</th>
+                                    <th class="text-end">{{ total_equity|money }}</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr class="table-info">
+                                        <td><code>-</code></td>
+                                        <td><strong>صافي الدخل (الشهر الحالي)</strong></td>
+                                        <td class="text-end"><strong>متعدد العملات</strong></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot class="table-dark">
+                                    <tr>
+                                        <th colspan="2">إجمالي حقوق الملكية</th>
+                                        <th class="text-end">{{ total_equity|money }}</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Multi-Currency Net Income Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-currency-exchange"></i> صافي الدخل حسب العملة
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if net_income_by_currency %}
+                    <div class="row">
+                        {% for currency, net_income in net_income_by_currency.items %}
+                            <div class="col-md-4 mb-3">
+                                <div class="card {% if net_income > 0 %}border-success{% elif net_income < 0 %}border-danger{% else %}border-secondary{% endif %}">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">{{ currency }}</h6>
+                                        <h4 class="{% if net_income > 0 %}text-success{% elif net_income < 0 %}text-danger{% else %}text-secondary{% endif %}">
+                                            {{ net_income|money }}
+                                        </h4>
+                                        <small class="text-muted">
+                                            {% if net_income > 0 %}ربح{% elif net_income < 0 %}خسارة{% else %}متوازن{% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="bi bi-info-circle text-muted"></i>
+                        <p class="text-muted mb-0">لا توجد بيانات صافي الدخل</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-calculator"></i> ملخص الميزانية
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="border rounded p-3 bg-light">
+                            <h4 class="text-primary">{{ total_assets|money }}</h4>
+                            <p class="mb-0">إجمالي الأصول</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3 bg-light">
+                            <h4 class="text-danger">{{ total_liabilities|money }}</h4>
+                            <p class="mb-0">إجمالي الخصوم</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3 bg-light">
+                            <h4 class="text-success">{{ total_equity|money }}</h4>
+                            <p class="mb-0">إجمالي حقوق الملكية</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3 {% if balance_check == 0 %}bg-success text-white{% else %}bg-warning{% endif %}">
+                            <h4>{{ balance_check|money }}</h4>
+                            <p class="mb-0">الفرق</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between">
+            <div>
+                <a href="{% url 'accounting:reports_dashboard' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> العودة للتقارير
+                </a>
+            </div>
+            <div>
+                <button onclick="window.print()" class="btn btn-outline-primary">
+                    <i class="bi bi-printer"></i> طباعة
+                </button>
+                <a href="?{{ request.GET.urlencode }}&export=excel" class="btn btn-outline-success">
+                    <i class="bi bi-file-excel"></i> تصدير Excel
+                </a>
+                <a href="?{{ request.GET.urlencode }}&export=pdf" class="btn btn-outline-danger ms-2">
+                    <i class="bi bi-file-earmark-pdf"></i> تصدير PDF
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+@media print {
+    .btn, .breadcrumb, nav, .d-flex.justify-content-between {
+        display: none !important;
+    }
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+{% endblock %}

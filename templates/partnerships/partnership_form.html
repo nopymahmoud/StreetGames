@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Street Games V2{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'partnerships:partnerships_list' %}">الشراكات</a></li>
+                <li class="breadcrumb-item active">{{ title }}</li>
+            </ol>
+        </nav>
+        
+        <h1 class="h3 mb-0">
+            <i class="bi bi-people text-primary"></i>
+            {{ title }}
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-form-check"></i> بيانات الشراكة
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" x-data="partnershipForm">
+                    {% csrf_token %}
+                    
+                    <!-- Zone and Partner Info -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.zone.id_for_label }}" class="form-label">
+                                <i class="bi bi-building"></i> منطقة الألعاب *
+                            </label>
+                            {{ form.zone }}
+                            {% if form.zone.errors %}
+                                <div class="text-danger small">{{ form.zone.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.partner_name.id_for_label }}" class="form-label">
+                                <i class="bi bi-person"></i> اسم الشريك *
+                            </label>
+                            {{ form.partner_name }}
+                            {% if form.partner_name.errors %}
+                                <div class="text-danger small">{{ form.partner_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Partner Type and IDs -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="{{ form.partner_type.id_for_label }}" class="form-label">
+                                <i class="bi bi-tag"></i> نوع الشريك
+                            </label>
+                            {{ form.partner_type }}
+                            {% if form.partner_type.errors %}
+                                <div class="text-danger small">{{ form.partner_type.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.national_id.id_for_label }}" class="form-label">
+                                <i class="bi bi-card-text"></i> الرقم القومي
+                            </label>
+                            {{ form.national_id }}
+                            {% if form.national_id.errors %}
+                                <div class="text-danger small">{{ form.national_id.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.commercial_register.id_for_label }}" class="form-label">
+                                <i class="bi bi-building-check"></i> السجل التجاري
+                            </label>
+                            {{ form.commercial_register }}
+                            {% if form.commercial_register.errors %}
+                                <div class="text-danger small">{{ form.commercial_register.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Financial Details -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="{{ form.percentage.id_for_label }}" class="form-label">
+                                <i class="bi bi-percent"></i> نسبة الشريك % *
+                            </label>
+                            <div class="input-group">
+                                {{ form.percentage }}
+                                <span class="input-group-text">%</span>
+                            </div>
+                            {% if form.percentage.errors %}
+                                <div class="text-danger small">{{ form.percentage.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.investment_amount.id_for_label }}" class="form-label">
+                                <i class="bi bi-cash"></i> مبلغ الاستثمار
+                            </label>
+                            {{ form.investment_amount }}
+                            {% if form.investment_amount.errors %}
+                                <div class="text-danger small">{{ form.investment_amount.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.currency.id_for_label }}" class="form-label">
+                                <i class="bi bi-currency-exchange"></i> العملة
+                            </label>
+                            {{ form.currency }}
+                            {% if form.currency.errors %}
+                                <div class="text-danger small">{{ form.currency.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Dates -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.start_date.id_for_label }}" class="form-label">
+                                <i class="bi bi-calendar-check"></i> تاريخ البداية *
+                            </label>
+                            {{ form.start_date }}
+                            {% if form.start_date.errors %}
+                                <div class="text-danger small">{{ form.start_date.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.end_date.id_for_label }}" class="form-label">
+                                <i class="bi bi-calendar-x"></i> تاريخ النهاية (اختياري)
+                            </label>
+                            {{ form.end_date }}
+                            {% if form.end_date.errors %}
+                                <div class="text-danger small">{{ form.end_date.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Expense Sharing -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="bi bi-calculator"></i> تحميل المصروفات
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        {{ form.share_expenses }}
+                                        <label class="form-check-label" for="{{ form.share_expenses.id_for_label }}">
+                                            يتحمل نسبته من المصروفات
+                                        </label>
+                                    </div>
+                                    {% if form.share_expenses.errors %}
+                                        <div class="text-danger small">{{ form.share_expenses.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.expense_percentage.id_for_label }}" class="form-label">
+                                        نسبة مختلفة للمصروفات %
+                                    </label>
+                                    <div class="input-group">
+                                        {{ form.expense_percentage }}
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                    <small class="text-muted">اتركه فارغاً لاستخدام نفس نسبة الشريك</small>
+                                    {% if form.expense_percentage.errors %}
+                                        <div class="text-danger small">{{ form.expense_percentage.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Notes -->
+                    <div class="mb-3">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">
+                            <i class="bi bi-chat-text"></i> ملاحظات
+                        </label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                            <div class="text-danger small">{{ form.notes.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> حفظ الشراكة
+                            </button>
+                            <a href="{% url 'partnerships:partnerships_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> إلغاء
+                            </a>
+                        </div>
+                        
+                        {% if partnership %}
+                            <div>
+                                <small class="text-muted">
+                                    <i class="bi bi-clock"></i> 
+                                    أنشئ في {{ partnership.created_at|date:"Y-m-d H:i"|default:"غير محدد" }}
+                                </small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Partnership Info -->
+        {% if partnership %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle"></i> معلومات إضافية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>رقم الحساب المحاسبي:</strong> {{ partnership.partner_account|default:"لم يتم تحديده" }}</p>
+                            <p><strong>الحالة:</strong> 
+                                {% if partnership.active %}
+                                    <span class="badge bg-success">نشط</span>
+                                {% else %}
+                                    <span class="badge bg-danger">غير نشط</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>نسبة تحمل المصروفات:</strong> {{ partnership.get_expense_percentage }}%</p>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'partnerships:partner_accounts_list' %}?partnership={{ partnership.pk }}" 
+                                   class="btn btn-sm btn-outline-info">
+                                    <i class="bi bi-file-text"></i> كشف الحساب
+                                </a>
+                                {% if can_access_treasury %}
+                                    <a href="{% url 'partnerships:payment_create' %}?partnership={{ partnership.pk }}" 
+                                       class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-plus"></i> إضافة دفعة
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('partnershipForm', () => ({
+        shareExpenses: {{ form.share_expenses.value|yesno:"true,false" }},
+        
+        init() {
+            // تحديث حالة حقل نسبة المصروفات
+            this.$watch('shareExpenses', (value) => {
+                const expensePercentageField = document.getElementById('{{ form.expense_percentage.id_for_label }}');
+                if (expensePercentageField) {
+                    expensePercentageField.disabled = !value;
+                    if (!value) {
+                        expensePercentageField.value = '';
+                    }
+                }
+            });
+        }
+    }));
+});
+</script>
+{% endblock %}

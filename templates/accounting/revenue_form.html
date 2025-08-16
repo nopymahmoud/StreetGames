@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Street Games V2{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'accounting:dashboard' %}">المحاسبة</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'accounting:revenues_list' %}">الإيرادات</a></li>
+                <li class="breadcrumb-item active">{{ title }}</li>
+            </ol>
+        </nav>
+        
+        <h1 class="h3 mb-0">
+            <i class="bi bi-cash-coin text-success"></i>
+            {{ title }}
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-form-check"></i> بيانات الإيراد
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" x-data="revenueForm">
+                    {% csrf_token %}
+                    
+                    <!-- Zone Selection -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.zone.id_for_label }}" class="form-label">
+                                <i class="bi bi-building"></i> منطقة الألعاب *
+                            </label>
+                            {{ form.zone }}
+                            {% if form.zone.errors %}
+                                <div class="text-danger small">{{ form.zone.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.date.id_for_label }}" class="form-label">
+                                <i class="bi bi-calendar"></i> التاريخ *
+                            </label>
+                            {{ form.date }}
+                            {% if form.date.errors %}
+                                <div class="text-danger small">{{ form.date.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Amount and Currency -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="{{ form.amount.id_for_label }}" class="form-label">
+                                <i class="bi bi-cash"></i> المبلغ *
+                            </label>
+                            <div class="input-group">
+                                {{ form.amount }}
+                                <span class="input-group-text" x-text="selectedCurrency">ج.م</span>
+                            </div>
+                            {% if form.amount.errors %}
+                                <div class="text-danger small">{{ form.amount.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.currency.id_for_label }}" class="form-label">
+                                <i class="bi bi-currency-exchange"></i> العملة
+                            </label>
+                            <select class="form-select" name="currency" id="{{ form.currency.id_for_label }}"
+                                    x-model="selectedCurrency">
+                                {% for code, name in supported_currencies %}
+                                    <option value="{{ code }}" {% if form.currency.value == code %}selected{% endif %}>{{ name }} ({{ code }})</option>
+                                {% endfor %}
+                            </select>
+                            {% if form.currency.errors %}
+                                <div class="text-danger small">{{ form.currency.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.payment_method.id_for_label }}" class="form-label">
+                                <i class="bi bi-credit-card"></i> طريقة الدفع
+                            </label>
+                            {{ form.payment_method }}
+                            {% if form.payment_method.errors %}
+                                <div class="text-danger small">{{ form.payment_method.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Notes -->
+                    <div class="mb-3">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">
+                            <i class="bi bi-chat-text"></i> ملاحظات
+                        </label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                            <div class="text-danger small">{{ form.notes.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Partner Distribution Info -->
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>ملاحظة:</strong> سيتم توزيع حصص الشركاء تلقائياً عند حفظ الإيراد حسب النسب المحددة لكل شريك في المنطقة المختارة.
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> حفظ الإيراد
+                            </button>
+                            <a href="{% url 'accounting:revenues_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> إلغاء
+                            </a>
+                            {% if revenue %}
+                                <button type="submit"
+                                        class="btn btn-outline-danger ms-2"
+                                        formmethod="post"
+                                        formaction="{% url 'accounting:revenue_delete' revenue.pk %}"
+                                        onclick="return confirm('هل أنت متأكد من حذف هذا الإيراد؟ لا يمكن التراجع عن هذه العملية.');">
+                                    <i class="bi bi-trash"></i> حذف
+                                </button>
+                            {% endif %}
+                        </div>
+
+                        {% if revenue %}
+                            <div>
+                                <small class="text-muted">
+                                    <i class="bi bi-clock"></i>
+                                    أنشئ في {{ revenue.created_at|date:"Y-m-d H:i" }}
+                                    بواسطة {{ revenue.created_by.get_full_name|default:revenue.created_by.username }}
+                                </small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {% if revenue and revenue.partner_shares_calculated %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-people"></i> توزيع الحصص على الشركاء
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle"></i>
+                        تم توزيع حصص الشركاء بنجاح لهذا الإيراد
+                    </div>
+                    <!-- TODO: عرض تفاصيل التوزيع -->
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('revenueForm', () => ({
+        selectedCurrency: '{{ form.currency.value|default:"EGP" }}',
+        
+        init() {
+            // تحديث رمز العملة عند تغيير العملة
+            this.$watch('selectedCurrency', (value) => {
+                const symbols = {
+                    'EGP': 'ج.م',
+                    'USD': '$',
+                    'EUR': '€'
+                };
+                // يمكن إضافة المزيد من التحديثات هنا
+            });
+        }
+    }));
+});
+</script>
+{% endblock %}
