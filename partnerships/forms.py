@@ -66,7 +66,7 @@ class PartnershipForm(forms.ModelForm):
 
 class PartnerPaymentForm(forms.ModelForm):
     """نموذج دفعات الشركاء"""
-    
+
     class Meta:
         model = PartnerPayment
         fields = ['partnership', 'payment_date', 'amount', 'currency', 'payment_method',
@@ -77,7 +77,7 @@ class PartnerPaymentForm(forms.ModelForm):
             'reference_number': forms.TextInput(attrs={'class': 'form-control'}),
             'notes': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
         }
-    
+
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
@@ -90,10 +90,20 @@ class PartnerPaymentForm(forms.ModelForm):
                 active=True
             ).select_related('zone')
 
+        # قائمة العملات المسموحة
+        from core.utils import get_supported_currencies
+        self.fields['currency'] = forms.ChoiceField(
+            choices=get_supported_currencies(),
+            initial=self.instance.currency if self.instance and self.instance.pk else 'EGP',
+            widget=forms.Select(attrs={'class': 'form-select'})
+        )
+
         # إضافة CSS classes
-        for field_name, field in self.fields.items():
-            field.widget.attrs.update({'class': 'form-control'})
-    
+        for name, field in self.fields.items():
+            # أبقي الحقول select بحالتها
+            if not isinstance(field.widget, (forms.Select, forms.SelectMultiple)):
+                field.widget.attrs.update({'class': 'form-control'})
+
     def clean_amount(self):
         amount = self.cleaned_data.get('amount')
         if amount and amount <= 0:

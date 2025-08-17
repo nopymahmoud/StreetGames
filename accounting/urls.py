@@ -28,4 +28,9 @@ urlpatterns = [
     path('reports/trial-balance/', reports_views.trial_balance, name='trial_balance'),
     path('reports/partner-statements/', reports_views.partner_statements, name='partner_statements'),
 
+    # دليل الحسابات
+    path('accounts/', views.accounts_list, name='accounts_list'),
+    path('accounts/create/', views.account_create, name='account_create'),
+    path('accounts/<int:pk>/edit/', views.account_edit, name='account_edit'),
+
 ]

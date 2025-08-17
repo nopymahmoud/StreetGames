@@ -117,13 +117,22 @@ class ChartOfAccountsForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # قائمة العملات المسموحة
+        from core.utils import get_supported_currencies
+        current = getattr(self.instance, 'currency', None) or 'EGP'
+        self.fields['currency'] = forms.ChoiceField(
+            choices=get_supported_currencies(),
+            initial=current,
+            widget=forms.Select(attrs={'class': 'form-select'})
+        )
+
         # إضافة CSS classes
         for field_name, field in self.fields.items():
             if field_name == 'active':
                 field.widget.attrs.update({'class': 'form-check-input'})
-            else:
+            elif not isinstance(field.widget, (forms.Select, forms.SelectMultiple)):
                 field.widget.attrs.update({'class': 'form-control'})
-    
+
     def clean_account_code(self):
         account_code = self.cleaned_data.get('account_code')
         if account_code:

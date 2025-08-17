@@ -1,10 +1,12 @@
 from django.contrib import admin
 from .models import ChartOfAccounts, JournalEntry, JournalEntryLine, DailyRevenue
 from .expense_models import Expense
+from .forms import ChartOfAccountsForm
 
 
 @admin.register(ChartOfAccounts)
 class ChartOfAccountsAdmin(admin.ModelAdmin):
+    form = ChartOfAccountsForm  # استخدم نفس النموذج الذي يعرض قائمة العملات الموحدة
     list_display = ['account_code', 'account_name', 'account_type', 'balance_type', 'current_balance', 'currency', 'active']
     list_filter = ['account_type', 'balance_type', 'currency', 'active', 'level']
     search_fields = ['account_code', 'account_name']

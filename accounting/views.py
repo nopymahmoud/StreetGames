@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum
 from django.http import JsonResponse, HttpResponseForbidden
+from django.contrib.auth.decorators import user_passes_test
 from django.utils import timezone
 from django.core.management import call_command
 from datetime import datetime, timedelta
@@ -11,6 +12,7 @@ from datetime import datetime, timedelta
 from .models import ChartOfAccounts, JournalEntry, DailyRevenue
 from .expense_models import Expense
 from .forms import DailyRevenueForm, ExpenseForm, ChartOfAccountsForm, RevenueFilterForm, ExpenseFilterForm
+from django.contrib.admin.views.decorators import staff_member_required
 from core.decorators import accounting_access_required
 
 
@@ -212,6 +214,37 @@ def expenses_list(request):
         'currency_totals': currency_totals,
     }
     return render(request, 'accounting/expenses_list.html', context)
+
+@staff_member_required
+def accounts_list(request):
+    accounts = ChartOfAccounts.objects.all().order_by('account_code')
+    return render(request, 'accounting/accounts_list.html', {'accounts': accounts, 'title': 'دليل الحسابات'})
+
+@staff_member_required
+def account_create(request):
+    if request.method == 'POST':
+        form = ChartOfAccountsForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'تم إضافة الحساب بنجاح')
+            return redirect('accounting:accounts_list')
+    else:
+        form = ChartOfAccountsForm()
+    return render(request, 'accounting/account_form.html', {'form': form, 'title': 'إضافة حساب جديد'})
+
+@staff_member_required
+def account_edit(request, pk):
+    account = get_object_or_404(ChartOfAccounts, pk=pk)
+    if request.method == 'POST':
+        form = ChartOfAccountsForm(request.POST, instance=account)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'تم تحديث الحساب بنجاح')
+            return redirect('accounting:accounts_list')
+    else:
+        form = ChartOfAccountsForm(instance=account)
+    return render(request, 'accounting/account_form.html', {'form': form, 'title': 'تعديل حساب', 'account': account})
+
 
 
 @accounting_access_required

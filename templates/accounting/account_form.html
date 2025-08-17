@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Street Games V2{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-12">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">الرئيسية</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'accounting:accounts_list' %}">دليل الحسابات</a></li>
+        <li class="breadcrumb-item active">{{ title }}</li>
+      </ol>
+    </nav>
+    <h1 class="h3 mb-0"><i class="bi bi-journal-text text-primary"></i> {{ title }}</h1>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-8 mx-auto">
+    <div class="card">
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">رقم الحساب</label>
+              {{ form.account_code }}
+              {% if form.account_code.errors %}<div class="text-danger small">{{ form.account_code.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">اسم الحساب</label>
+              {{ form.account_name }}
+              {% if form.account_name.errors %}<div class="text-danger small">{{ form.account_name.errors.0 }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">نوع الحساب</label>
+              {{ form.account_type }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">الحساب الأب</label>
+              {{ form.parent_account }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">طبيعة الرصيد</label>
+              {{ form.balance_type }}
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">الرصيد الافتتاحي</label>
+              {{ form.opening_balance }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">العملة</label>
+              {{ form.currency }}
+            </div>
+            <div class="col-md-4 d-flex align-items-center">
+              <div class="form-check mt-4">
+                {{ form.active }} <label class="form-check-label">نشط</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-3 d-flex justify-content-between">
+            <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i> حفظ</button>
+            <a href="{% url 'accounting:accounts_list' %}" class="btn btn-secondary"><i class="bi bi-x-circle"></i> إلغاء</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
